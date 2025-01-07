@@ -58,7 +58,7 @@ async function sendHongbao(amount) {
     });
 
     const encryptedKey = registerResponse.data.message;
-    const link = `${window.location.origin}/#redeem?key=${encodeURIComponent(encryptedKey)}&timestamp=${releaseTimestamp}`;
+    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(encryptedKey)}&timestamp=${releaseTimestamp}`;
 
     detailsElement.innerHTML = `
       Identity registered successfully with Shutter!<br>
