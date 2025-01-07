@@ -27,9 +27,13 @@ async function sendHongbao(amount) {
     const privateKey = newAccount.privateKey;
     const recipientAddress = newAccount.address;
 
-    document.getElementById('hongbao-details').textContent = 'Requesting encryption key from Shutter...';
+    const detailsElement = document.getElementById('hongbao-details');
+    const linkElement = document.getElementById('hongbao-link');
+    const hongbaoVisual = document.getElementById('hongbao-visual');
 
-    const identityPrefix = web3.utils.randomHex(32);
+    detailsElement.textContent = 'Requesting encryption key from Shutter...';
+    detailsElement.classList.remove('hidden');
+
     const registerResponse = await axios.post(`${NANOSHUTTER_API_BASE}/encrypt/with_time`, {
       cypher_text: privateKey,
       timestamp: releaseTimestamp,
@@ -38,13 +42,14 @@ async function sendHongbao(amount) {
     const encryptedKey = registerResponse.data.message;
     const link = `${window.location.origin}/#redeem?key=${encodeURIComponent(encryptedKey)}&timestamp=${releaseTimestamp}`;
 
-    document.getElementById('hongbao-details').textContent = `
-      Identity registered successfully with Shutter!
-      Shutter Keypers encrypted the Hongbao.
-      Encryption key: ${encryptedKey}
-      Funds are locked until: ${new Date(releaseTimestamp * 1000).toLocaleString()}
+    detailsElement.innerHTML = `
+      Identity registered successfully with Shutter!<br>
+      Shutter Keypers encrypted the Hongbao.<br>
+      Encryption key: <strong>${encryptedKey}</strong><br>
+      Funds are locked until: <strong>${new Date(releaseTimestamp * 1000).toLocaleString()}</strong>
     `;
-    document.getElementById('hongbao-link').textContent = `Share this link: ${link}`;
+    linkElement.textContent = `Share this link: ${link}`;
+    linkElement.classList.remove('hidden');
 
     const hongbaoAmountWei = web3.utils.toWei(amount.toString(), 'ether');
     await web3.eth.sendTransaction({
@@ -52,6 +57,9 @@ async function sendHongbao(amount) {
       to: recipientAddress,
       value: hongbaoAmountWei,
     });
+
+    hongbaoVisual.classList.remove('hidden');
+    hongbaoVisual.classList.add('sealed');
 
     alert('Hongbao created successfully! Share the link with the recipient.');
   } catch (error) {
@@ -68,7 +76,11 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp) {
       return;
     }
 
-    document.getElementById('redemption-details').textContent = 'Requesting decryption key from Shutter...';
+    const detailsElement = document.getElementById('redemption-details');
+    const hongbaoVisual = document.getElementById('hongbao-visual-redeem');
+
+    detailsElement.textContent = 'Requesting decryption key from Shutter...';
+    detailsElement.classList.remove('hidden');
 
     const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
       encrypted_msg: encryptedKey,
@@ -77,10 +89,10 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp) {
 
     const decryptedPrivateKey = decryptResponse.data.message;
 
-    document.getElementById('redemption-details').textContent = `
-      Decryption successful!
-      Shutter Keypers generated the decryption key.
-      Decryption key: ${decryptedPrivateKey}
+    detailsElement.innerHTML = `
+      Decryption successful!<br>
+      Shutter Keypers generated the decryption key.<br>
+      Decryption key: <strong>${decryptedPrivateKey}</strong>
     `;
 
     const hongbaoAccount = web3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
@@ -114,6 +126,9 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp) {
     await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
 
     document.getElementById('redeem-result').textContent = `Funds swept to your wallet: ${receiverAccount}`;
+    hongbaoVisual.classList.remove('hidden');
+    hongbaoVisual.classList.add('opened');
+
     alert(`Hongbao redeemed! Funds have been transferred to your MetaMask wallet.`);
   } catch (error) {
     console.error('Error redeeming and sweeping Hongbao:', error);
@@ -127,15 +142,14 @@ function populateFieldsFromHash() {
   const encryptedKey = params.get('key');
   const timestamp = params.get('timestamp');
 
-  console.log('Parsed hash values:', { encryptedKey, timestamp });
-
   if (encryptedKey && timestamp) {
     document.getElementById('hongbao-key').value = encryptedKey;
     document.getElementById('hongbao-timestamp').value = timestamp;
-    startCountdown(timestamp); // Start countdown dynamically
-    console.log('Fields populated successfully.');
-  } else {
-    console.log('Hash parameters missing or invalid.');
+    startCountdown(timestamp);
+
+    const hongbaoVisual = document.getElementById('hongbao-visual-redeem');
+    hongbaoVisual.classList.remove('hidden');
+    hongbaoVisual.classList.add('sealed');
   }
 }
 
@@ -160,7 +174,7 @@ function startCountdown(timestamp) {
   }
 
   const interval = setInterval(updateCountdown, 1000);
-  updateCountdown(); // Initial call to display immediately
+  updateCountdown();
 }
 
 document.getElementById('create-hongbao').addEventListener('click', async () => {

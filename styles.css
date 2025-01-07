@@ -1,116 +1,163 @@
 /* General Styling */
 body {
     font-family: 'Arial', sans-serif;
-    background-color: #f8f1f1;
+    background-color: #ffe6e6; /* Light pink for a festive feel */
     color: #333;
     margin: 0;
     padding: 0;
-  }
-  
-  .container {
+}
+
+.container {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
     text-align: center;
-  }
-  
-  .title {
+}
+
+.title {
     color: #d32f2f;
-    font-size: 2.5rem;
-    margin-bottom: 20px;
-  }
-  
-  .section {
+    font-size: 3rem;
     margin-bottom: 40px;
-  }
-  
-  .details, .link {
-    word-wrap: break-word; /* Wrap long words */
-    overflow-wrap: break-word; /* Support for long text breaking */
-    white-space: normal; /* Prevent text from sticking to one line */
-    text-align: left; /* Align text for better readability */
-  }
-  
-  .details {
+    font-weight: bold;
+}
+
+.section {
+    margin-bottom: 50px;
+    padding: 20px;
+    border-radius: 10px;
+    background-color: #fff; /* White card effect */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+}
+
+.section h2 {
+    color: #d32f2f;
+    font-size: 2rem;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+/* Text Sections */
+.details,
+.link {
     font-size: 1rem;
-    color: #fff; /* Ensure readability on red background */
-    margin-top: 10px;
-  }
-  
-  .link {
-    color: #ffd700; /* Gold for links */
-    font-weight: bold; /* Emphasize links */
-    margin-top: 10px;
-  }
-  
-  .input {
-    display: block;
-    width: 80%;
-    margin: 10px auto;
+    color: #333;
+    background-color: rgba(211, 47, 47, 0.1); /* Light red background for contrast */
     padding: 10px;
+    border-radius: 6px;
+    margin-top: 10px;
+    word-wrap: break-word;
+    overflow-wrap: break-word; /* Ensure long words wrap */
+    white-space: normal; /* Allow multi-line text */
+    text-align: left; /* Align text for readability */
+}
+
+.link {
+    background-color: #d32f2f;
+    color: #fff;
+    font-weight: bold;
+    padding: 10px 15px;
+    margin: 10px auto;
+    border-radius: 6px;
+    text-decoration: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Add shadow for link box */
+    overflow-wrap: break-word;
+    text-align: left;
+}
+
+.link:hover {
+    background-color: #a52828;
+}
+
+/* Input and Button Styling */
+.input {
+    display: block;
+    width: 90%;
+    margin: 10px auto;
+    padding: 12px;
     border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1rem;
-  }
-  
-  .button {
+    border-radius: 6px;
+    font-size: 1.2rem;
+}
+
+.button {
     background-color: #d32f2f;
     color: #fff;
     border: none;
-    padding: 10px 20px;
-    font-size: 1rem;
-    border-radius: 4px;
+    padding: 12px 30px;
+    font-size: 1.2rem;
+    border-radius: 6px;
     cursor: pointer;
-    margin-top: 10px;
-  }
-  
-  .button:hover {
+    margin-top: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Button shadow */
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.button:hover {
     background-color: #a52828;
-  }
-  
-  /* Hongbao Envelope */
-  .hongbao-envelope {
-    background-color: #d32f2f;
-    border: 2px solid #a52828;
-    border-radius: 10px;
-    padding: 20px;
-    color: #fff;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    text-align: left;
-    margin: 0 auto;
-    max-width: 600px;
-  }
-  
-  .hongbao-envelope label {
-    font-size: 1.2rem;
-    font-weight: bold;
-    display: block;
-    margin-bottom: 5px;
-  }
-  
-  .hongbao-envelope h3 {
-    color: #ffd700; /* Gold for countdown */
-    font-size: 1.2rem;
-  }
-  
-  .countdown {
+    transform: scale(1.05); /* Slight hover effect */
+}
+
+/* Hongbao Envelope */
+.hongbao-visual {
+    background: linear-gradient(145deg, #d32f2f, #e53935); /* Beveled gradient */
+    border: 2px solid #a52828; /* Darker red border */
+    width: 180px;
+    height: 240px;
+    margin: 40px auto 0; /* Balanced margin */
+    position: relative;
+    border-radius: 10px; /* Smooth edges */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); /* Realistic shadow */
+    overflow: visible; /* Allow flap visibility */
+}
+
+/* Top Flap */
+.hongbao-visual::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 120px 90px 0 90px; /* Triangular flap */
+    border-color: #b71c1c transparent transparent transparent; /* Flap color */
+    top: 0;
+    left: 0;
+    transform-origin: 50% 0; /* Pivot point */
+    transform: rotateX(0); /* Default sealed state */
+    transition: transform 0.6s ease-in-out; /* Smooth animation */
+    z-index: 10; /* Flap above content */
+}
+
+/* Opened Envelope */
+.hongbao-visual.opened::before {
+    transform: rotateX(-120deg); /* Pivot flap upward */
+    top: 0; /* Keep flap attached visually */
+}
+
+/* Countdown Styling */
+.countdown {
     font-size: 1.5rem;
     font-weight: bold;
-    color: #ffd700;
-  }
-  
-  /* Mobile Responsiveness */
-  @media (max-width: 600px) {
-    .hongbao-envelope {
-      padding: 15px;
-    }
-  
+    color: #d32f2f;
+    margin-top: 10px;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
     .title {
-      font-size: 2rem;
+        font-size: 2.5rem;
     }
-  
-    .button {
-      font-size: 0.9rem;
+
+    .section {
+        padding: 15px;
     }
-  }
-  
+
+    .hongbao-visual {
+        width: 140px;
+        height: 200px;
+        margin: 20px auto;
+    }
+
+    .hongbao-visual::before {
+        border-width: 100px 70px 0 70px;
+    }
+}
