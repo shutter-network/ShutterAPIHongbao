@@ -10,10 +10,10 @@
 </head>
 <body>
   <div class="container">
-    <h1 class="title">🎁 Hongbao Gifting DApp</h1>
+    <h1 class="title">🎁 Shutterized Hongbao Gifting DApp</h1>
     
-    <div id="sender-section" class="section">
-      <h2>Create Your Hongbao</h2>
+    <div id="sender-section" class="section hidden">
+      <h2>Create and gift a shutterized Hongbao</h2>
       <div class="hongbao-envelope">
         <label for="hongbao-amount">💰 Amount (ETH):</label>
         <input type="number" id="hongbao-amount" class="input" step="0.01" placeholder="Enter amount">
@@ -24,8 +24,9 @@
       </div>
     </div>
 
-    <div id="receiver-section" class="section">
-      <h2>Redeem Your Hongbao</h2>
+    <div id="receiver-section" class="section hidden">
+      <h2>Someone gave you a Hongbao!</h2>
+      <p class="details">This Hongbao is locked until Lunar New Year! It was encrypted with Shutter, and Shutter Keypers will decrypt it exactly at the right time.</p>
       <div class="hongbao-envelope">
         <label for="hongbao-key">🔑 Encrypted Key:</label>
         <input type="text" id="hongbao-key" class="input" placeholder="Paste encrypted key from link">
@@ -37,6 +38,9 @@
         <p id="redemption-details" class="details"></p>
         <p id="redeem-result" class="details"></p>
         <div id="hongbao-visual-redeem" class="hongbao-visual hidden"></div>
+      </div>
+      <div id="create-own-section" class="section hidden">
+        <button id="create-own-hongbao" class="button">Create Your Own Hongbao</button>
       </div>
     </div>
   </div>

@@ -18,6 +18,25 @@ async function connectMetaMask() {
   }
 }
 
+// Copy to clipboard functionality
+function copyToClipboard(text) {
+  const tempInput = document.createElement('input');
+  tempInput.style.position = 'absolute';
+  tempInput.style.left = '-9999px';
+  tempInput.value = text;
+  document.body.appendChild(tempInput);
+  tempInput.select();
+  document.execCommand('copy');
+  document.body.removeChild(tempInput);
+  alert('Link copied to clipboard!');
+}
+
+// Add click listener for the link
+document.getElementById('hongbao-link').addEventListener('click', (event) => {
+  const link = event.target.textContent.replace('Share this link: ', '');
+  copyToClipboard(link);
+});
+
 async function sendHongbao(amount) {
   try {
     const senderAccount = await connectMetaMask();
@@ -32,7 +51,6 @@ async function sendHongbao(amount) {
     const hongbaoVisual = document.getElementById('hongbao-visual');
 
     detailsElement.textContent = 'Requesting encryption key from Shutter...';
-    detailsElement.classList.remove('hidden');
 
     const registerResponse = await axios.post(`${NANOSHUTTER_API_BASE}/encrypt/with_time`, {
       cypher_text: privateKey,
@@ -49,7 +67,6 @@ async function sendHongbao(amount) {
       Funds are locked until: <strong>${new Date(releaseTimestamp * 1000).toLocaleString()}</strong>
     `;
     linkElement.textContent = `Share this link: ${link}`;
-    linkElement.classList.remove('hidden');
 
     const hongbaoAmountWei = web3.utils.toWei(amount.toString(), 'ether');
     await web3.eth.sendTransaction({
@@ -80,7 +97,6 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp) {
     const hongbaoVisual = document.getElementById('hongbao-visual-redeem');
 
     detailsElement.textContent = 'Requesting decryption key from Shutter...';
-    detailsElement.classList.remove('hidden');
 
     const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
       encrypted_msg: encryptedKey,
@@ -142,14 +158,27 @@ function populateFieldsFromHash() {
   const encryptedKey = params.get('key');
   const timestamp = params.get('timestamp');
 
+  // Always hide the sender section
+  document.getElementById('sender-section').classList.add('hidden');
+
   if (encryptedKey && timestamp) {
+    // Show the receiver section
+    document.getElementById('receiver-section').classList.remove('hidden');
+    document.getElementById('create-own-section').classList.remove('hidden');
+
+    // Populate fields
     document.getElementById('hongbao-key').value = encryptedKey;
     document.getElementById('hongbao-timestamp').value = timestamp;
+
+    // Start countdown
     startCountdown(timestamp);
 
-    const hongbaoVisual = document.getElementById('hongbao-visual-redeem');
-    hongbaoVisual.classList.remove('hidden');
-    hongbaoVisual.classList.add('sealed');
+    // Update title
+    document.querySelector('.title').textContent = "🎉 Someone sent you a Hongbao!";
+  } else {
+    // If no valid key/timestamp in hash, show sender section
+    document.getElementById('sender-section').classList.remove('hidden');
+    document.getElementById('receiver-section').classList.add('hidden');
   }
 }
 
@@ -176,6 +205,13 @@ function startCountdown(timestamp) {
   const interval = setInterval(updateCountdown, 1000);
   updateCountdown();
 }
+
+// Add listener for creating a new Hongbao
+document.getElementById('create-own-hongbao').addEventListener('click', () => {
+  document.getElementById('receiver-section').classList.add('hidden');
+  document.getElementById('sender-section').classList.remove('hidden');
+  document.querySelector('.title').textContent = "🎁 Hongbao Gifting DApp";
+});
 
 document.getElementById('create-hongbao').addEventListener('click', async () => {
   const amount = parseFloat(document.getElementById('hongbao-amount').value);
