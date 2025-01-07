@@ -85,7 +85,7 @@ async function sendHongbao(amount) {
   }
 }
 
-async function redeemHongbaoAndSweep(encryptedKey, timestamp) {
+async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
   try {
     const currentTime = Math.floor(Date.now() / 1000);
     if (currentTime < timestamp) {
@@ -108,7 +108,8 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp) {
     detailsElement.innerHTML = `
       Decryption successful!<br>
       Shutter Keypers generated the decryption key.<br>
-      Decryption key: <strong>${decryptedPrivateKey}</strong>
+      Decryption key: <strong>${decryptedPrivateKey}</strong><br>
+      Amount received: <strong>${amount} ETH</strong>
     `;
 
     const hongbaoAccount = web3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
@@ -171,15 +172,14 @@ function populateFieldsFromHash() {
     document.getElementById('hongbao-key').value = encryptedKey;
     document.getElementById('hongbao-timestamp').value = timestamp;
 
-    // Display the amount given
-    const detailsElement = document.querySelector('.details');
-    detailsElement.innerHTML = `This Hongbao contains <strong>${amount} ETH</strong> and is locked until Lunar New Year!`;
-
     // Start countdown
     startCountdown(timestamp);
 
     // Update title
     document.querySelector('.title').textContent = "🎉 Someone sent you a Hongbao!";
+
+    // Store amount for later use
+    document.getElementById('redeem-hongbao').setAttribute('data-amount', amount);
   } else {
     // If no valid key/timestamp in hash, show sender section
     document.getElementById('sender-section').classList.remove('hidden');
@@ -226,7 +226,8 @@ document.getElementById('create-hongbao').addEventListener('click', async () => 
 document.getElementById('redeem-hongbao').addEventListener('click', () => {
   const encryptedKey = document.getElementById('hongbao-key').value;
   const timestamp = parseInt(document.getElementById('hongbao-timestamp').value, 10);
-  redeemHongbaoAndSweep(encryptedKey, timestamp);
+  const amount = document.getElementById('redeem-hongbao').getAttribute('data-amount');
+  redeemHongbaoAndSweep(encryptedKey, timestamp, amount);
 });
 
 document.addEventListener('DOMContentLoaded', populateFieldsFromHash);
