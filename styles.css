@@ -1,0 +1,116 @@
+/* General Styling */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f8f1f1;
+    color: #333;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+  }
+  
+  .title {
+    color: #d32f2f;
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+  }
+  
+  .section {
+    margin-bottom: 40px;
+  }
+  
+  .details, .link {
+    word-wrap: break-word; /* Wrap long words */
+    overflow-wrap: break-word; /* Support for long text breaking */
+    white-space: normal; /* Prevent text from sticking to one line */
+    text-align: left; /* Align text for better readability */
+  }
+  
+  .details {
+    font-size: 1rem;
+    color: #fff; /* Ensure readability on red background */
+    margin-top: 10px;
+  }
+  
+  .link {
+    color: #ffd700; /* Gold for links */
+    font-weight: bold; /* Emphasize links */
+    margin-top: 10px;
+  }
+  
+  .input {
+    display: block;
+    width: 80%;
+    margin: 10px auto;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+  
+  .button {
+    background-color: #d32f2f;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  
+  .button:hover {
+    background-color: #a52828;
+  }
+  
+  /* Hongbao Envelope */
+  .hongbao-envelope {
+    background-color: #d32f2f;
+    border: 2px solid #a52828;
+    border-radius: 10px;
+    padding: 20px;
+    color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    text-align: left;
+    margin: 0 auto;
+    max-width: 600px;
+  }
+  
+  .hongbao-envelope label {
+    font-size: 1.2rem;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+  }
+  
+  .hongbao-envelope h3 {
+    color: #ffd700; /* Gold for countdown */
+    font-size: 1.2rem;
+  }
+  
+  .countdown {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #ffd700;
+  }
+  
+  /* Mobile Responsiveness */
+  @media (max-width: 600px) {
+    .hongbao-envelope {
+      padding: 15px;
+    }
+  
+    .title {
+      font-size: 2rem;
+    }
+  
+    .button {
+      font-size: 0.9rem;
+    }
+  }
+  
