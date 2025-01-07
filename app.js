@@ -58,7 +58,7 @@ async function sendHongbao(amount) {
     });
 
     const encryptedKey = registerResponse.data.message;
-    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(encryptedKey)}&timestamp=${releaseTimestamp}`;
+    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(encryptedKey)}&timestamp=${releaseTimestamp}&amount=${amount}`;
 
     detailsElement.innerHTML = `
       Identity registered successfully with Shutter!<br>
@@ -157,11 +157,12 @@ function populateFieldsFromHash() {
   const params = new URLSearchParams(hash.split('?')[1]);
   const encryptedKey = params.get('key');
   const timestamp = params.get('timestamp');
+  const amount = params.get('amount');
 
   // Always hide the sender section
   document.getElementById('sender-section').classList.add('hidden');
 
-  if (encryptedKey && timestamp) {
+  if (encryptedKey && timestamp && amount) {
     // Show the receiver section
     document.getElementById('receiver-section').classList.remove('hidden');
     document.getElementById('create-own-section').classList.remove('hidden');
@@ -169,6 +170,10 @@ function populateFieldsFromHash() {
     // Populate fields
     document.getElementById('hongbao-key').value = encryptedKey;
     document.getElementById('hongbao-timestamp').value = timestamp;
+
+    // Display the amount given
+    const detailsElement = document.querySelector('.details');
+    detailsElement.innerHTML = `This Hongbao contains <strong>${amount} ETH</strong> and is locked until Lunar New Year!`;
 
     // Start countdown
     startCountdown(timestamp);
