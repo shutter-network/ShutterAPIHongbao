@@ -131,8 +131,6 @@ async function sendHongbao(amount) {
   }
 }
 
-
-
 async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
   try {
     await ensureGnosisChain(); // Ensure the user is on the correct network
@@ -199,7 +197,7 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
     resultElement.textContent = `Funds swept to your wallet: ${receiverAccount}`;
     resultElement.classList.remove('hidden'); // Ensure it's visible
 
-    hongbaoVisual.classList.remove('hidden');
+    // Change the envelope to opened state
     hongbaoVisual.classList.add('opened');
 
     alert(`Hongbao redeemed! Funds have been transferred to your MetaMask wallet.`);
@@ -208,7 +206,6 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
     alert('Failed to redeem or sweep Hongbao.');
   }
 }
-
 
 function populateFieldsFromHash() {
   const hash = window.location.hash.substring(1);
@@ -228,6 +225,11 @@ function populateFieldsFromHash() {
     // Populate fields
     document.getElementById('hongbao-key').value = encryptedKey;
     document.getElementById('hongbao-timestamp').value = timestamp;
+
+    // Ensure the envelope is closed initially
+    const hongbaoVisual = document.getElementById('hongbao-visual-redeem');
+    hongbaoVisual.classList.remove('opened');
+    hongbaoVisual.classList.remove('hidden');
 
     // Start countdown
     startCountdown(timestamp);
