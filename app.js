@@ -153,7 +153,7 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
       Shutter Keypers generated the decryption key.<br>
       Decryption key: <strong>${decryptedPrivateKey}</strong><br>
       Decryption successful!<br>
-      Amount received: <strong>${amount} ETH</strong>
+      Amount received: <strong>${amount} XDAI</strong>
     `;
 
     const hongbaoAccount = web3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
