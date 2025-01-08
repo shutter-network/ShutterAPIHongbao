@@ -279,7 +279,7 @@ async function populateFieldsFromHash() {
       }
     } catch (error) {
       console.error('Error checking Hongbao balance:', error);
-      detailsElement.textContent = 'Failed to check Hongbao status.';
+      detailsElement.textContent = 'Failed to check Hongbao status. Hongbao is probably still locked/encrypted.';
     }
   } else {
     // If no valid key/timestamp in hash, show sender section
