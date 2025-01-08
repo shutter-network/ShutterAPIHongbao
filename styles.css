@@ -43,6 +43,7 @@ body {
 /* Text Sections */
 .details,
 .link {
+    display: none; /* Default hidden */
     font-size: 1rem;
     color: #333;
     background-color: rgba(211, 47, 47, 0.1); /* Light red background for contrast */
@@ -53,6 +54,12 @@ body {
     overflow-wrap: break-word; /* Ensure long words wrap */
     white-space: normal; /* Allow multi-line text */
     text-align: left; /* Align text for readability */
+}
+
+/* Hide empty elements */
+.details.hidden,
+.link.hidden {
+    display: none; /* Hide until content is added */
 }
 
 .link {
@@ -66,6 +73,11 @@ body {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Add shadow for link box */
     overflow-wrap: break-word;
     text-align: left;
+}
+
+.details:not(.hidden):not(:empty),
+.link:not(.hidden):not(:empty) {
+    display: block; /* Show only if not hidden and has content */
 }
 
 .link:hover {
@@ -102,7 +114,12 @@ body {
 }
 
 /* Hongbao Envelope */
+.hongbao-visual.hidden {
+    display: none; /* Hide initially */
+}
+
 .hongbao-visual {
+    display: block; /* Show when class is removed */
     background: linear-gradient(145deg, #d32f2f, #e53935); /* Beveled gradient */
     border: 2px solid #a52828; /* Darker red border */
     width: 180px;

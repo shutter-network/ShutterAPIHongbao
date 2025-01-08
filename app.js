@@ -93,6 +93,7 @@ async function sendHongbao(amount) {
     const hongbaoVisual = document.getElementById('hongbao-visual');
 
     detailsElement.textContent = 'Requesting encryption key from Shutter...';
+    detailsElement.classList.remove('hidden'); // Show the details section
 
     const registerResponse = await axios.post(`${NANOSHUTTER_API_BASE}/encrypt/with_time`, {
       cypher_text: privateKey,
@@ -109,6 +110,7 @@ async function sendHongbao(amount) {
       Funds are locked until: <strong>${new Date(releaseTimestamp * 1000).toLocaleString()}</strong>
     `;
     linkElement.textContent = `Share this link: ${link}`;
+    linkElement.classList.remove('hidden'); // Show the link section
 
     const hongbaoAmountWei = web3.utils.toWei(amount.toString(), 'ether');
     await web3.eth.sendTransaction({
@@ -117,7 +119,7 @@ async function sendHongbao(amount) {
       value: hongbaoAmountWei,
     });
 
-    hongbaoVisual.classList.remove('hidden');
+    hongbaoVisual.classList.remove('hidden'); // Show the Hongbao envelope
     hongbaoVisual.classList.add('sealed');
 
     alert('Hongbao created successfully! Share the link with the recipient.');
@@ -126,6 +128,8 @@ async function sendHongbao(amount) {
     alert('Failed to create Hongbao.');
   }
 }
+
+
 
 async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
   try {
