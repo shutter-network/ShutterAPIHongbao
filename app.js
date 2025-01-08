@@ -214,20 +214,28 @@ async function populateFieldsFromHash() {
   const timestamp = params.get('timestamp');
   const amount = params.get('amount');
 
-  // Always hide the sender section
-  document.getElementById('sender-section').classList.add('hidden');
+  // Ensure elements are visible only when required
+  const senderSection = document.getElementById('sender-section');
+  const receiverSection = document.getElementById('receiver-section');
+  const detailsElement = document.getElementById('redemption-details');
+  const hongbaoVisual = document.getElementById('hongbao-visual-redeem');
+  const countdownElement = document.getElementById('countdown');
+
+  senderSection.classList.add('hidden');
+  receiverSection.classList.add('hidden');
+  detailsElement.classList.add('hidden');
+  hongbaoVisual.classList.add('hidden');
 
   if (encryptedKey && timestamp && amount) {
     // Show the receiver section
-    document.getElementById('receiver-section').classList.remove('hidden');
-    document.getElementById('create-own-section').classList.remove('hidden');
+    receiverSection.classList.remove('hidden');
 
     // Populate fields
     document.getElementById('hongbao-key').value = encryptedKey;
     document.getElementById('hongbao-timestamp').value = timestamp;
+    document.getElementById('redeem-hongbao').setAttribute('data-amount', amount);
 
     // Ensure the envelope is closed initially
-    const hongbaoVisual = document.getElementById('hongbao-visual-redeem');
     hongbaoVisual.classList.remove('opened');
     hongbaoVisual.classList.remove('hidden');
 
@@ -237,12 +245,10 @@ async function populateFieldsFromHash() {
     // Update title
     document.querySelector('.title').textContent = "🎉 Someone sent you a Hongbao!";
 
-    // Store amount for later use
-    document.getElementById('redeem-hongbao').setAttribute('data-amount', amount);
-
-    // Check the balance of the Hongbao account
-    const detailsElement = document.getElementById('redemption-details');
+    // Check balance
     detailsElement.textContent = 'Checking Hongbao status...';
+    detailsElement.classList.remove('hidden');
+
     try {
       const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
         encrypted_msg: encryptedKey,
@@ -265,10 +271,10 @@ async function populateFieldsFromHash() {
     }
   } else {
     // If no valid key/timestamp in hash, show sender section
-    document.getElementById('sender-section').classList.remove('hidden');
-    document.getElementById('receiver-section').classList.add('hidden');
+    senderSection.classList.remove('hidden');
   }
 }
+
 
 
 function startCountdown(timestamp) {
