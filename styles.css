@@ -116,13 +116,8 @@ body {
     transform: scale(1.05); /* Slight hover effect */
 }
 
-/* Hongbao Envelope */
-.hongbao-visual.hidden {
-    display: none; /* Hide initially */
-}
-
 .hongbao-visual {
-    display: block; /* Show when class is removed */
+    display: block; /* Ensure the envelope is always visible */
     background: linear-gradient(145deg, #d32f2f, #e53935); /* Beveled gradient */
     border: 2px solid #a52828; /* Darker red border */
     width: 180px;
@@ -134,7 +129,7 @@ body {
     overflow: visible; /* Allow flap visibility */
 }
 
-/* Top Flap */
+/* Top Flap (Closed State) */
 .hongbao-visual::before {
     content: '';
     position: absolute;
@@ -146,7 +141,7 @@ body {
     top: 0;
     left: 0;
     transform-origin: 50% 0; /* Pivot point */
-    transform: rotateX(0); /* Default sealed state */
+    transform: rotateX(0); /* Default closed state */
     transition: transform 0.6s ease-in-out; /* Smooth animation */
     z-index: 10; /* Flap above content */
 }
@@ -156,6 +151,7 @@ body {
     transform: rotateX(-120deg); /* Pivot flap upward */
     top: 0; /* Keep flap attached visually */
 }
+
 
 /* Countdown Styling */
 .countdown {
