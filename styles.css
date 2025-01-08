@@ -42,7 +42,8 @@ body {
 
 /* Text Sections */
 .details,
-.link {
+.link,
+#redeem-result {
     display: none; /* Default hidden */
     font-size: 1rem;
     color: #333;
@@ -58,8 +59,9 @@ body {
 
 /* Hide empty elements */
 .details.hidden,
-.link.hidden {
-    display: none; /* Hide until content is added */
+.link.hidden,
+#redeem-result.hidden {
+    display: none; /* Hide these elements when the hidden class is applied */
 }
 
 .link {
@@ -76,7 +78,8 @@ body {
 }
 
 .details:not(.hidden):not(:empty),
-.link:not(.hidden):not(:empty) {
+.link:not(.hidden):not(:empty),
+#redeem-result:not(.hidden):not(:empty) {
     display: block; /* Show only if not hidden and has content */
 }
 

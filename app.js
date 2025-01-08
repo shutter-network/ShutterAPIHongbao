@@ -105,8 +105,10 @@ async function sendHongbao(amount) {
 
     detailsElement.innerHTML = `
       Identity registered successfully with Shutter!<br>
-      Shutter Keypers encrypted the Hongbao.<br>
+      One-time-use private key was created and funded.
+      Shutter Keypers provided the encryption key the Hongbao.<br>
       Encryption key: <strong>${encryptedKey}</strong><br>
+      Private key encrypted.
       Funds are locked until: <strong>${new Date(releaseTimestamp * 1000).toLocaleString()}</strong>
     `;
     linkElement.textContent = `Share this link: ${link}`;
@@ -143,8 +145,10 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
 
     const detailsElement = document.getElementById('redemption-details');
     const hongbaoVisual = document.getElementById('hongbao-visual-redeem');
+    const resultElement = document.getElementById('redeem-result');
 
     detailsElement.textContent = 'Requesting decryption key from Shutter...';
+    detailsElement.classList.remove('hidden'); // Ensure it's visible
 
     const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
       encrypted_msg: encryptedKey,
@@ -154,12 +158,13 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
     const decryptedPrivateKey = decryptResponse.data.message;
 
     detailsElement.innerHTML = `
-      Shutter Keypers generated the decryption key.<br>
+      Shutter Keypers generated the decryption key to decrypt one-time use private key.<br>
       Decryption key: <strong>${decryptedPrivateKey}</strong><br>
       Decryption successful!<br>
       Amount gifted: <strong>${amount} XDAI</strong>
-      Waiting for transaction confirmation...<br>
+      Pending transaction confirmation...<br>
     `;
+    detailsElement.classList.remove('hidden'); // Ensure it's visible
 
     const hongbaoAccount = web3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
     web3.eth.accounts.wallet.add(hongbaoAccount);
@@ -191,7 +196,9 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
     const signedTx = await hongbaoAccount.signTransaction(tx);
     await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
 
-    document.getElementById('redeem-result').textContent = `Funds swept to your wallet: ${receiverAccount}`;
+    resultElement.textContent = `Funds swept to your wallet: ${receiverAccount}`;
+    resultElement.classList.remove('hidden'); // Ensure it's visible
+
     hongbaoVisual.classList.remove('hidden');
     hongbaoVisual.classList.add('opened');
 
@@ -201,6 +208,7 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
     alert('Failed to redeem or sweep Hongbao.');
   }
 }
+
 
 function populateFieldsFromHash() {
   const hash = window.location.hash.substring(1);
