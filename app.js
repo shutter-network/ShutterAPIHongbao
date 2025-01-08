@@ -207,7 +207,7 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
   }
 }
 
-function populateFieldsFromHash() {
+async function populateFieldsFromHash() {
   const hash = window.location.hash.substring(1);
   const params = new URLSearchParams(hash.split('?')[1]);
   const encryptedKey = params.get('key');
@@ -239,12 +239,37 @@ function populateFieldsFromHash() {
 
     // Store amount for later use
     document.getElementById('redeem-hongbao').setAttribute('data-amount', amount);
+
+    // Check the balance of the Hongbao account
+    const detailsElement = document.getElementById('redemption-details');
+    detailsElement.textContent = 'Checking Hongbao status...';
+    try {
+      const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
+        encrypted_msg: encryptedKey,
+        timestamp,
+      });
+
+      const decryptedPrivateKey = decryptResponse.data.message;
+      const hongbaoAccount = web3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
+      web3.eth.accounts.wallet.add(hongbaoAccount);
+
+      const balance = BigInt(await web3.eth.getBalance(hongbaoAccount.address));
+      if (balance === BigInt(0)) {
+        detailsElement.innerHTML = '<strong>Status:</strong> This Hongbao has already been claimed.';
+      } else {
+        detailsElement.innerHTML = `<strong>Status:</strong> Hongbao available! Amount: ${amount} XDAI`;
+      }
+    } catch (error) {
+      console.error('Error checking Hongbao balance:', error);
+      detailsElement.textContent = 'Failed to check Hongbao status.';
+    }
   } else {
     // If no valid key/timestamp in hash, show sender section
     document.getElementById('sender-section').classList.remove('hidden');
     document.getElementById('receiver-section').classList.add('hidden');
   }
 }
+
 
 function startCountdown(timestamp) {
   const countdownElement = document.getElementById('countdown');
