@@ -214,20 +214,21 @@ async function populateFieldsFromHash() {
   const timestamp = params.get('timestamp');
   const amount = params.get('amount');
 
-  // Ensure elements are visible only when required
+  // DOM Elements
   const senderSection = document.getElementById('sender-section');
   const receiverSection = document.getElementById('receiver-section');
   const detailsElement = document.getElementById('redemption-details');
   const hongbaoVisual = document.getElementById('hongbao-visual-redeem');
   const countdownElement = document.getElementById('countdown');
 
+  // Hide sender section initially
   senderSection.classList.add('hidden');
   receiverSection.classList.add('hidden');
   detailsElement.classList.add('hidden');
   hongbaoVisual.classList.add('hidden');
 
   if (encryptedKey && timestamp && amount) {
-    // Show the receiver section
+    // Show receiver section
     receiverSection.classList.remove('hidden');
 
     // Populate fields
@@ -240,7 +241,7 @@ async function populateFieldsFromHash() {
     hongbaoVisual.classList.remove('hidden');
 
     // Start countdown
-    startCountdown(timestamp);
+    startCountdown(parseInt(timestamp, 10));
 
     // Update title
     document.querySelector('.title').textContent = "🎉 Someone sent you a Hongbao!";
@@ -250,15 +251,26 @@ async function populateFieldsFromHash() {
     detailsElement.classList.remove('hidden');
 
     try {
-      const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
-        encrypted_msg: encryptedKey,
-        timestamp,
-      });
+      // Request decryption from the Shutter API
+      const decryptResponse = await axios.post(
+        `${NANOSHUTTER_API_BASE}/decrypt/with_time`,
+        {
+          encrypted_msg: encryptedKey, // Ensure this is properly passed
+          timestamp: parseInt(timestamp, 10), // Convert timestamp to number
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json', // Explicitly set JSON content type
+          },
+        }
+      );
 
+      // Decrypt the private key
       const decryptedPrivateKey = decryptResponse.data.message;
       const hongbaoAccount = web3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
       web3.eth.accounts.wallet.add(hongbaoAccount);
 
+      // Check the balance of the Hongbao account
       const balance = BigInt(await web3.eth.getBalance(hongbaoAccount.address));
       if (balance === BigInt(0)) {
         detailsElement.innerHTML = '<strong>Status:</strong> This Hongbao has already been claimed.';
@@ -274,7 +286,6 @@ async function populateFieldsFromHash() {
     senderSection.classList.remove('hidden');
   }
 }
-
 
 
 function startCountdown(timestamp) {
