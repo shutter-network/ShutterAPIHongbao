@@ -1,13 +1,55 @@
 const NANOSHUTTER_API_BASE = 'https://nanoshutter.staging.shutter.network';
 
+const GNOSIS_CHAIN_PARAMS = {
+  chainId: '0x64', // Chain ID 100 in hexadecimal
+  chainName: 'Gnosis Chain',
+  rpcUrls: ['https://rpc.gnosis.gateway.fm'],
+  nativeCurrency: {
+    name: 'xDai',
+    symbol: 'XDAI',
+    decimals: 18,
+  },
+  blockExplorerUrls: ['https://gnosisscan.io/'],
+};
+
 if (typeof window.ethereum === 'undefined') {
   alert('Please install MetaMask to use this DApp.');
 }
 
 const web3 = new Web3(window.ethereum);
 
+async function ensureGnosisChain() {
+  try {
+    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    if (chainId !== GNOSIS_CHAIN_PARAMS.chainId) {
+      try {
+        // Attempt to switch to Gnosis Chain
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: GNOSIS_CHAIN_PARAMS.chainId }],
+        });
+      } catch (switchError) {
+        // If the chain has not been added to MetaMask, prompt to add it
+        if (switchError.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [GNOSIS_CHAIN_PARAMS],
+          });
+        } else {
+          throw switchError;
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to switch to Gnosis Chain:', error);
+    alert('Please manually switch to Gnosis Chain in MetaMask and reload the page.');
+    throw error;
+  }
+}
+
 async function connectMetaMask() {
   try {
+    await ensureGnosisChain(); // Ensure the user is on the correct network
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     console.log('MetaMask connected:', accounts[0]);
     return accounts[0];
@@ -87,6 +129,8 @@ async function sendHongbao(amount) {
 
 async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
   try {
+    await ensureGnosisChain(); // Ensure the user is on the correct network
+
     const currentTime = Math.floor(Date.now() / 1000);
     if (currentTime < timestamp) {
       alert(`Hongbao is locked until ${new Date(timestamp * 1000).toLocaleString()}`);
@@ -110,7 +154,6 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
       Decryption key: <strong>${decryptedPrivateKey}</strong><br>
       Decryption successful!<br>
       Amount received: <strong>${amount} ETH</strong>
-      Waiting for transaction to confirm...<br>
     `;
 
     const hongbaoAccount = web3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
