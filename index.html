@@ -11,7 +11,8 @@
 <body>
   <div class="container">
     <h1 class="title">🎁 Shutterized Hongbao Gifting DApp</h1>
-    
+
+    <!-- Sender Section -->
     <div id="sender-section" class="section hidden">
       <h2>Create and gift a shutterized Hongbao</h2>
       <div class="hongbao-envelope">
@@ -25,6 +26,7 @@
       </div>
     </div>
 
+    <!-- Receiver Section -->
     <div id="receiver-section" class="section hidden">
       <p class="details">
         This Hongbao is locked until Lunar New Year! It was encrypted with Shutter, and Shutter Keypers will provide the decryption key exactly at the right time. 
@@ -33,7 +35,7 @@
           Find out more about Shutter's threshold encryption DKG.
         </a>
       </p>
-      
+
       <div class="hongbao-envelope">
         <label for="hongbao-key">🔑 Encrypted Key:</label>
         <input type="text" id="hongbao-key" class="input" placeholder="Paste encrypted key from link">
@@ -42,6 +44,7 @@
         <h3>Countdown to Unlock:</h3>
         <p id="countdown" class="countdown"></p>
         <button id="redeem-hongbao" class="button">Redeem Hongbao to your active MetaMask account</button>
+        <button id="redeem-passkey-wallet" class="button">Redeem Hongbao to Passkey Wallet</button>
         <p id="redemption-details" class="details hidden"></p>
         <p id="redeem-result" class="details hidden"></p>
         <div id="hongbao-visual-redeem" class="hongbao-visual hidden"></div>
@@ -51,7 +54,8 @@
       </div>
     </div>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.umd.min.js"></script>
+  <script type="module" src="app.js"></script>
 
-  <script src="app.js"></script>
 </body>
 </html>

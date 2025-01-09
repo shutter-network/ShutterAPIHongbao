@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biometric Ethereum Wallet</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        header {
+            background-color: #0056b3;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            font-family: Arial Black, sans-serif;
+            margin-bottom: 10px;
+            color: #0056b3;
+        }
+
+        button {
+            font-family: Arial Black, sans-serif;
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 0;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #003d82;
+        }
+
+        textarea, input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        textarea {
+            resize: none;
+        }
+
+        .balance {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #0056b3;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>Biometric Ethereum Wallet</header>
+    <div class="container">
+        <h2>Create or Load Wallet</h2>
+        <div>
+            <button id="createWallet">Create Wallet</button>
+            <button id="loadWallet">Load Wallet</button>
+        </div>
+        <textarea id="walletOutput" rows="4" placeholder="Your wallet details will appear here" readonly></textarea>
+        <div class="balance" id="walletBalance">Balance: Loading...</div>
+    </div>
+
+    <div class="container">
+        <h2>Send Funds</h2>
+        <input type="text" id="recipient" placeholder="Recipient Address">
+        <input type="number" id="amount" placeholder="Amount in xDAI">
+        <button id="sendFunds">Send Funds</button>
+        <textarea id="transactionOutput" rows="4" placeholder="Transaction details will appear here" readonly></textarea>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.umd.min.js"></script>
+    <script src="walletmanagement.js"></script>
+</body>
+</html>
