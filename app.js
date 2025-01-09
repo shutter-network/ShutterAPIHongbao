@@ -323,11 +323,10 @@ async function populateFieldsFromHash() {
 
       const decryptedPrivateKey = decryptResponse.data.message;
 
-      // Add the private key to check balance
-      const hongbaoAccount = web3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
-      web3.eth.accounts.wallet.add(hongbaoAccount);
+      // Use fallbackWeb3 to check balance
+      const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
+      fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
 
-      // Check balance after decryption
       await checkHongbaoBalance(hongbaoAccount.address, amount);
     } catch (error) {
       console.error("Error retrieving decryption key:", error);
@@ -339,16 +338,18 @@ async function populateFieldsFromHash() {
 }
 
 
+
 async function checkHongbaoBalance(hongbaoAccountAddress, expectedAmount) {
   const detailsElement = document.getElementById("redemption-details");
 
   try {
-    const balance = BigInt(await web3.eth.getBalance(hongbaoAccountAddress));
+    // Use fallbackWeb3 for the balance check
+    const balance = BigInt(await fallbackWeb3.eth.getBalance(hongbaoAccountAddress));
 
     if (balance === BigInt(0)) {
       detailsElement.innerHTML = "<strong>Status:</strong> This Hongbao has already been claimed.";
     } else {
-      const formattedBalance = web3.utils.fromWei(balance.toString(), "ether");
+      const formattedBalance = fallbackWeb3.utils.fromWei(balance.toString(), "ether");
       detailsElement.innerHTML = `<strong>Status:</strong> Hongbao available! Current balance: ${formattedBalance} XDAI (Expected: ${expectedAmount} XDAI)`;
     }
   } catch (error) {
@@ -356,6 +357,7 @@ async function checkHongbaoBalance(hongbaoAccountAddress, expectedAmount) {
     detailsElement.textContent = "Error retrieving balance. Please try again later.";
   }
 }
+
 
 
 
