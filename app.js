@@ -140,12 +140,15 @@ async function sendHongbao(amount) {
 
 async function fundHongbaoWithPasskey(amount) {
   try {
-    const wallet = await authenticateWallet(); // Use the existing wallet
+    const wallet = await authenticateWallet(); // Authenticate and load the passkey wallet
     console.log("Passkey Wallet Address:", wallet.address);
+
+    const provider = new ethers.JsonRpcProvider(GNOSIS_CHAIN_PARAMS.rpcUrls[0]);
+    const walletWithProvider = wallet.connect(provider);
 
     const releaseTimestamp = Math.floor(Date.now() / 1000) + 300; // Lock for 5 minutes
 
-    const newAccount = fallbackWeb3.eth.accounts.create();
+    const newAccount = ethers.Wallet.createRandom();
     const privateKey = newAccount.privateKey;
     const recipientAddress = newAccount.address;
 
@@ -173,29 +176,39 @@ async function fundHongbaoWithPasskey(amount) {
     linkElement.textContent = `Share this link: ${link}`;
     linkElement.classList.remove("hidden");
 
-    const hongbaoAmountWei = fallbackWeb3.utils.toWei(amount.toString(), "ether");
-    const gasPrice = BigInt(await fallbackWeb3.eth.getGasPrice());
-    const gasLimit = BigInt(21000);
+    const hongbaoAmountWei = ethers.parseEther(amount.toString());
+
+    // Fetch gas price and estimate gas cost
+    const gasPrice = BigInt(await provider.getGasPrice());
+    const gasLimitEstimate = await provider.estimateGas({
+      from: wallet.address,
+      to: recipientAddress,
+      value: hongbaoAmountWei,
+    });
+    const gasLimit = BigInt(gasLimitEstimate);
     const gasCost = gasPrice * gasLimit;
 
-    const walletBalance = BigInt(await fallbackWeb3.eth.getBalance(wallet.address));
+    const walletBalance = BigInt(await provider.getBalance(wallet.address));
     if (walletBalance < hongbaoAmountWei + gasCost) {
-      alert("Insufficient funds in Passkey Wallet to fund Hongbao.");
+      const formattedGasCost = ethers.formatEther(gasCost);
+      const formattedRequired = ethers.formatEther(hongbaoAmountWei + gasCost);
+      const formattedBalance = ethers.formatEther(walletBalance);
+
+      alert(`Insufficient funds to fund the Hongbao. 
+        Required: ${formattedRequired} xDAI (includes ${formattedGasCost} xDAI for gas). 
+        Available: ${formattedBalance} xDAI.`);
       return;
     }
 
-    // Transfer funds from Passkey Wallet
-    const tx = {
-      from: wallet.address,
+    // Send transaction
+    const tx = await walletWithProvider.sendTransaction({
       to: recipientAddress,
-      value: hongbaoAmountWei.toString(),
-      gas: gasLimit.toString(),
-      gasPrice: gasPrice.toString(),
-      chainId: parseInt(GNOSIS_CHAIN_PARAMS.chainId, 16),
-    };
+      value: hongbaoAmountWei,
+      gasLimit: gasLimit,
+      gasPrice: gasPrice,
+    });
 
-    const signedTx = await wallet.signTransaction(tx);
-    await fallbackWeb3.eth.sendSignedTransaction(signedTx.rawTransaction);
+    console.log("Transaction sent:", tx.hash);
 
     hongbaoVisual.classList.remove("hidden");
     hongbaoVisual.classList.add("sealed");
