@@ -178,15 +178,15 @@ async function fundHongbaoWithPasskey(amount) {
 
     const hongbaoAmountWei = ethers.parseEther(amount.toString());
 
-    // Fetch gas price and estimate gas cost
-    const gasPrice = BigInt(await provider.getGasPrice());
+    // Fetch gas price
+    const gasPrice = await provider.send("eth_gasPrice", []);
     const gasLimitEstimate = await provider.estimateGas({
       from: wallet.address,
       to: recipientAddress,
       value: hongbaoAmountWei,
     });
     const gasLimit = BigInt(gasLimitEstimate);
-    const gasCost = gasPrice * gasLimit;
+    const gasCost = BigInt(gasPrice) * gasLimit;
 
     const walletBalance = BigInt(await provider.getBalance(wallet.address));
     if (walletBalance < hongbaoAmountWei + gasCost) {
@@ -205,7 +205,7 @@ async function fundHongbaoWithPasskey(amount) {
       to: recipientAddress,
       value: hongbaoAmountWei,
       gasLimit: gasLimit,
-      gasPrice: gasPrice,
+      gasPrice: BigInt(gasPrice),
     });
 
     console.log("Transaction sent:", tx.hash);
@@ -219,6 +219,7 @@ async function fundHongbaoWithPasskey(amount) {
     alert("Failed to fund Hongbao with Passkey Wallet.");
   }
 }
+
 
 
 
