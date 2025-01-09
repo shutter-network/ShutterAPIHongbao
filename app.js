@@ -221,6 +221,7 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
 
 async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
   try {
+    // Register the wallet using Passkey
     const wallet = await registerPasskey("Hongbao Wallet");
     console.log("Passkey Wallet Address:", wallet.address);
 
@@ -234,7 +235,6 @@ async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
     const hongbaoVisual = document.getElementById("hongbao-visual-redeem");
     const resultElement = document.getElementById("redeem-result");
 
-    // Update details section to show progress
     detailsElement.textContent = "Requesting decryption key from Shutter...";
     detailsElement.classList.remove("hidden");
 
@@ -246,37 +246,31 @@ async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
 
     const decryptedPrivateKey = decryptResponse.data.message;
 
-    // Update details with decryption progress
-    detailsElement.innerHTML = `
-      Shutter Keypers generated the decryption key to decrypt one-time use private key.<br>
-      Decryption key: <strong>${decryptedPrivateKey}</strong><br>
-      Decryption successful!<br>
-      Amount gifted: <strong>${amount} XDAI</strong>
-      Checking account balance and preparing transaction...<br>
-    `;
-
-    // Add decrypted private key to Web3 wallet
+    // Add the private key to the Web3 wallet
     const hongbaoAccount = web3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
     web3.eth.accounts.wallet.add(hongbaoAccount);
 
-    const balance = BigInt(await web3.eth.getBalance(hongbaoAccount.address));
+    // Use a fallback provider if MetaMask is not available
+    const rpcProviderUrl = GNOSIS_CHAIN_PARAMS.rpcUrls[0];
+    const fallbackWeb3 = new Web3(new Web3.providers.HttpProvider(rpcProviderUrl));
+
+    // Get balance and gas price
+    const balance = BigInt(await fallbackWeb3.eth.getBalance(hongbaoAccount.address));
     if (balance === BigInt(0)) {
       alert("No funds available to sweep.");
-      detailsElement.innerHTML += "No funds available to sweep.";
       return;
     }
 
-    const gasPrice = BigInt(await web3.eth.getGasPrice());
+    const gasPrice = BigInt(await fallbackWeb3.eth.getGasPrice());
     const gasLimit = BigInt(21000);
     const gasCost = gasPrice * gasLimit;
 
     if (balance <= gasCost) {
       alert("Insufficient funds to cover gas fees.");
-      detailsElement.innerHTML += "Insufficient funds to cover gas fees.";
       return;
     }
 
-    // Prepare and sign transaction
+    // Construct the transaction
     const tx = {
       from: hongbaoAccount.address,
       to: wallet.address, // Send to Passkey Wallet Address
@@ -285,30 +279,25 @@ async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
       gasPrice: gasPrice.toString(),
     };
 
-    detailsElement.innerHTML += "Signing transaction and sending funds...<br>";
+    // Sign and broadcast the transaction
     const signedTx = await hongbaoAccount.signTransaction(tx);
-    await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
+    const receipt = await fallbackWeb3.eth.sendSignedTransaction(signedTx.rawTransaction);
 
-    // Update result and visual elements
-    resultElement.innerHTML = `
-      Funds swept to Passkey Wallet: <strong>${wallet.address}</strong>.<br>
-      <a href="wallet.html" target="_blank">Manage Wallet</a>
+    detailsElement.innerHTML = `
+      Funds successfully redeemed to Passkey Wallet: <strong>${wallet.address}</strong>.<br>
+      Transaction Hash: <a href="${GNOSIS_CHAIN_PARAMS.blockExplorerUrls[0]}/tx/${receipt.transactionHash}" target="_blank">${receipt.transactionHash}</a><br>
+      Amount: ${web3.utils.fromWei((balance - gasCost).toString(), "ether")} XDAI
     `;
-    resultElement.classList.remove("hidden");
+    detailsElement.classList.remove("hidden");
     hongbaoVisual.classList.add("opened");
 
-    detailsElement.innerHTML += `
-      Transaction confirmed!<br>
-      Funds successfully transferred to Passkey Wallet: <strong>${wallet.address}</strong>.
-      Redeemed amount: ${web3.utils.fromWei((balance - gasCost).toString(), "ether")} XDAI.<br>
-    `;
     alert(`Hongbao redeemed and funds transferred to Passkey Wallet: ${wallet.address}`);
   } catch (error) {
     console.error("Error redeeming Hongbao with Passkey Wallet:", error);
-    detailsElement.innerHTML += "Error during redemption. Please check the console for details.";
     alert("Failed to redeem Hongbao with Passkey Wallet.");
   }
 }
+
 
 
 
