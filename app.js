@@ -138,12 +138,12 @@ async function sendHongbao(amount) {
 }
 
 
-async function sendHongbaoWithPasskey(amount) {
+async function fundHongbaoWithPasskey(amount) {
   try {
-    const wallet = await registerPasskey("Hongbao Wallet");
+    const wallet = await authenticateWallet(); // Use the existing wallet
     console.log("Passkey Wallet Address:", wallet.address);
 
-    const releaseTimestamp = Math.floor(Date.now() / 1000) + 300; // Lock for 10 minutes
+    const releaseTimestamp = Math.floor(Date.now() / 1000) + 300; // Lock for 5 minutes
 
     const newAccount = fallbackWeb3.eth.accounts.create();
     const privateKey = newAccount.privateKey;
@@ -180,7 +180,7 @@ async function sendHongbaoWithPasskey(amount) {
 
     const walletBalance = BigInt(await fallbackWeb3.eth.getBalance(wallet.address));
     if (walletBalance < hongbaoAmountWei + gasCost) {
-      alert("Insufficient funds in Passkey Wallet to create Hongbao.");
+      alert("Insufficient funds in Passkey Wallet to fund Hongbao.");
       return;
     }
 
@@ -200,10 +200,10 @@ async function sendHongbaoWithPasskey(amount) {
     hongbaoVisual.classList.remove("hidden");
     hongbaoVisual.classList.add("sealed");
 
-    alert("Hongbao created successfully! Share the link with the recipient.");
+    alert("Hongbao funded successfully! Share the link with the recipient.");
   } catch (error) {
-    console.error("Error creating Hongbao with Passkey Wallet:", error);
-    alert("Failed to create Hongbao with Passkey Wallet.");
+    console.error("Error funding Hongbao with Passkey Wallet:", error);
+    alert("Failed to fund Hongbao with Passkey Wallet.");
   }
 }
 
@@ -481,13 +481,13 @@ document.getElementById('redeem-passkey-wallet').addEventListener('click', () =>
   redeemHongbaoWithPasskey(encryptedKey, timestamp, amount);
 });
 
-document.getElementById("create-hongbao-passkey").addEventListener("click", async () => {
+document.getElementById("create-hongbao-with-passkey").addEventListener("click", async () => {
   const amount = parseFloat(document.getElementById("hongbao-amount").value);
   if (!amount || amount <= 0) {
     alert("Please enter a valid amount.");
     return;
   }
-  await sendHongbaoWithPasskey(amount);
+  await fundHongbaoWithPasskey(amount);
 });
 
 
