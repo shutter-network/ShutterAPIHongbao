@@ -15,6 +15,8 @@ const GNOSIS_CHAIN_PARAMS = {
   blockExplorerUrls: ['https://gnosisscan.io/'],
 };
 
+const fallbackWeb3 = new Web3(GNOSIS_CHAIN_PARAMS.rpcUrls[0]);
+
 if (typeof window.ethereum === 'undefined') {
   alert('Please install MetaMask to use this DApp.');
 }
@@ -217,8 +219,6 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
   }
 }
 
-
-
 async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
   try {
     const wallet = await registerPasskey("Hongbao Wallet");
@@ -276,7 +276,7 @@ async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
 
     detailsElement.innerHTML = `
       Funds successfully transferred to Passkey Wallet: <strong>${wallet.address}</strong>.<br>
-      Redeemed amount: ${web3.utils.fromWei((balance - gasCost).toString(), "ether")} XDAI.<br>
+      Redeemed amount: ${fallbackWeb3.utils.fromWei((balance - gasCost).toString(), "ether")} XDAI.<br>
       <a href="wallet.html" target="_blank">Manage Wallet</a>
     `;
     alert(`Hongbao redeemed and funds transferred to Passkey Wallet: ${wallet.address}`);
