@@ -180,4 +180,18 @@ body {
     .hongbao-visual::before {
         border-width: 100px 70px 0 70px;
     }
+
+    
+}
+.shutter-link {
+    color: #d32f2f; /* Match the theme color */
+    font-weight: bold;
+    text-decoration: underline;
+    margin-top: 10px;
+    display: inline-block; /* Align properly */
+    transition: color 0.3s ease;
+}
+
+.shutter-link:hover {
+    color: #a52828; /* Darker red for hover effect */
 }
