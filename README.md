@@ -1,5 +1,8 @@
 # Shutterized Hongbao DApp Documentation
 
+![image](https://github.com/user-attachments/assets/8a18a818-532f-4384-9e96-018ef362507f)
+
+
 ## Overview
 The Shutterized Hongbao DApp is a decentralized application designed for secure gifting of cryptocurrency (e.g., xDai) on the Gnosis Chain. Leveraging Shutter encryption technology, this app ensures that funds in the Hongbao (red envelope) are locked and can only be redeemed after a specified time. The app generates one-time-use private keys for secure gifting and uses Shutter Keypers to encrypt and later decrypt these keys at the specified time.
 
