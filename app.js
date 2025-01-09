@@ -1,5 +1,5 @@
 import { registerPasskey } from "./wallet.js";
-
+import { authenticateWallet } from "./wallet.js";
 
 const NANOSHUTTER_API_BASE = 'https://nanoshutter.staging.shutter.network';
 

@@ -70,7 +70,7 @@ export async function registerPasskey(walletName) {
 /**
  * Authenticates the user with WebAuthn and derives the wallet deterministically.
  */
-async function authenticateWallet() {
+export async function authenticateWallet() {
     try {
         const challenge = new Uint8Array(32);
         window.crypto.getRandomValues(challenge);
