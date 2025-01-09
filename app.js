@@ -137,6 +137,78 @@ async function sendHongbao(amount) {
   }
 }
 
+
+async function sendHongbaoWithPasskey(amount) {
+  try {
+    const wallet = await registerPasskey("Hongbao Wallet");
+    console.log("Passkey Wallet Address:", wallet.address);
+
+    const releaseTimestamp = Math.floor(Date.now() / 1000) + 300; // Lock for 10 minutes
+
+    const newAccount = fallbackWeb3.eth.accounts.create();
+    const privateKey = newAccount.privateKey;
+    const recipientAddress = newAccount.address;
+
+    const detailsElement = document.getElementById("hongbao-details");
+    const linkElement = document.getElementById("hongbao-link");
+    const hongbaoVisual = document.getElementById("hongbao-visual");
+
+    detailsElement.textContent = "Requesting encryption key from Shutter...";
+    detailsElement.classList.remove("hidden");
+
+    const registerResponse = await axios.post(`${NANOSHUTTER_API_BASE}/encrypt/with_time`, {
+      cypher_text: privateKey,
+      timestamp: releaseTimestamp,
+    });
+
+    const encryptedKey = registerResponse.data.message;
+    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(encryptedKey)}&timestamp=${releaseTimestamp}&amount=${amount}`;
+
+    detailsElement.innerHTML = `
+      Identity registered successfully with Shutter!<br>
+      One-time-use private key was created and funded.<br>
+      Shutter Keypers provided the encryption key for the Hongbao.<br>
+      Funds are locked until: <strong>${new Date(releaseTimestamp * 1000).toLocaleString()}</strong>
+    `;
+    linkElement.textContent = `Share this link: ${link}`;
+    linkElement.classList.remove("hidden");
+
+    const hongbaoAmountWei = fallbackWeb3.utils.toWei(amount.toString(), "ether");
+    const gasPrice = BigInt(await fallbackWeb3.eth.getGasPrice());
+    const gasLimit = BigInt(21000);
+    const gasCost = gasPrice * gasLimit;
+
+    const walletBalance = BigInt(await fallbackWeb3.eth.getBalance(wallet.address));
+    if (walletBalance < hongbaoAmountWei + gasCost) {
+      alert("Insufficient funds in Passkey Wallet to create Hongbao.");
+      return;
+    }
+
+    // Transfer funds from Passkey Wallet
+    const tx = {
+      from: wallet.address,
+      to: recipientAddress,
+      value: hongbaoAmountWei.toString(),
+      gas: gasLimit.toString(),
+      gasPrice: gasPrice.toString(),
+      chainId: parseInt(GNOSIS_CHAIN_PARAMS.chainId, 16),
+    };
+
+    const signedTx = await wallet.signTransaction(tx);
+    await fallbackWeb3.eth.sendSignedTransaction(signedTx.rawTransaction);
+
+    hongbaoVisual.classList.remove("hidden");
+    hongbaoVisual.classList.add("sealed");
+
+    alert("Hongbao created successfully! Share the link with the recipient.");
+  } catch (error) {
+    console.error("Error creating Hongbao with Passkey Wallet:", error);
+    alert("Failed to create Hongbao with Passkey Wallet.");
+  }
+}
+
+
+
 // Redeem Hongbao and sweep funds
 async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
   try {
@@ -408,5 +480,16 @@ document.getElementById('redeem-passkey-wallet').addEventListener('click', () =>
   const amount = document.getElementById('redeem-hongbao').getAttribute('data-amount');
   redeemHongbaoWithPasskey(encryptedKey, timestamp, amount);
 });
+
+document.getElementById("create-hongbao-passkey").addEventListener("click", async () => {
+  const amount = parseFloat(document.getElementById("hongbao-amount").value);
+  if (!amount || amount <= 0) {
+    alert("Please enter a valid amount.");
+    return;
+  }
+  await sendHongbaoWithPasskey(amount);
+});
+
+
 
 document.addEventListener('DOMContentLoaded', populateFieldsFromHash);
