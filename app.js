@@ -87,7 +87,7 @@ document.getElementById('hongbao-link').addEventListener('click', (event) => {
 async function sendHongbao(amount) {
   try {
     const senderAccount = await connectMetaMask();
-    const releaseTimestamp = Math.floor(Date.now() / 1000) + 30; // Lock for 10 minutes
+    const releaseTimestamp = Math.floor(Date.now() / 1000) + 300; // Lock for 10 minutes
 
     const newAccount = web3.eth.accounts.create();
     const privateKey = newAccount.privateKey;
