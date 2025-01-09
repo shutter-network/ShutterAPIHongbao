@@ -18,13 +18,16 @@ const GNOSIS_CHAIN_PARAMS = {
 const fallbackWeb3 = new Web3(GNOSIS_CHAIN_PARAMS.rpcUrls[0]);
 
 if (typeof window.ethereum === 'undefined') {
-  alert('Please install MetaMask to use this DApp.');
+  console.warn('MetaMask is not available. Using fallback provider for redemption.');
 }
+
 
 const web3 = new Web3(window.ethereum);
 
-// Ensures Gnosis Chain connection
 async function ensureGnosisChain() {
+  if (typeof window.ethereum === 'undefined') {
+    throw new Error('MetaMask is required to create a Hongbao.');
+  }
   try {
     const chainId = await window.ethereum.request({ method: 'eth_chainId' });
     if (chainId !== GNOSIS_CHAIN_PARAMS.chainId) {
@@ -46,10 +49,10 @@ async function ensureGnosisChain() {
     }
   } catch (error) {
     console.error('Failed to switch to Gnosis Chain:', error);
-    alert('Please manually switch to Gnosis Chain in MetaMask and reload the page.');
     throw error;
   }
 }
+
 
 // Connect MetaMask wallet
 async function connectMetaMask() {
@@ -286,7 +289,6 @@ async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
   }
 }
 
-// Populate fields from URL hash
 async function populateFieldsFromHash() {
   const hash = window.location.hash.substring(1);
   const params = new URLSearchParams(hash.split("?")[1]);
@@ -311,7 +313,6 @@ async function populateFieldsFromHash() {
 
     startCountdown(parseInt(timestamp, 10));
 
-    // Show initial status
     detailsElement.textContent = "Checking Hongbao status...";
     detailsElement.classList.remove("hidden");
 
@@ -323,7 +324,6 @@ async function populateFieldsFromHash() {
 
       const decryptedPrivateKey = decryptResponse.data.message;
 
-      // Use fallbackWeb3 to check balance
       const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
       fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
 
@@ -336,6 +336,7 @@ async function populateFieldsFromHash() {
     senderSection.classList.remove("hidden");
   }
 }
+
 
 
 
