@@ -104,7 +104,7 @@ async function sendHongbao(amount) {
     });
 
     const encryptedKey = registerResponse.data.message;
-    const link = `${window.location.origin}/#redeem?key=${encodeURIComponent(encryptedKey)}&timestamp=${releaseTimestamp}&amount=${amount}`;
+    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(encryptedKey)}&timestamp=${releaseTimestamp}&amount=${amount}`;
 
     detailsElement.innerHTML = `
       Identity registered successfully with Shutter!<br>
@@ -135,7 +135,7 @@ async function sendHongbao(amount) {
 // Redeem Hongbao and sweep funds
 async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
   try {
-    await ensureGnosisChain();
+    await ensureGnosisChain(); // Ensure the user is on the correct network
 
     const currentTime = Math.floor(Date.now() / 1000);
     if (currentTime < timestamp) {
@@ -147,9 +147,11 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
     const hongbaoVisual = document.getElementById('hongbao-visual-redeem');
     const resultElement = document.getElementById('redeem-result');
 
+    // Update details section to show progress
     detailsElement.textContent = 'Requesting decryption key from Shutter...';
-    detailsElement.classList.remove('hidden');
+    detailsElement.classList.remove('hidden'); // Ensure it's visible
 
+    // Request decryption key
     const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
       encrypted_msg: encryptedKey,
       timestamp,
@@ -157,25 +159,39 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
 
     const decryptedPrivateKey = decryptResponse.data.message;
 
+    // Update details with decryption progress
+    detailsElement.innerHTML = `
+      Shutter Keypers generated the decryption key to decrypt one-time use private key.<br>
+      Decryption key: <strong>${decryptedPrivateKey}</strong><br>
+      Decryption successful!<br>
+      Amount gifted: <strong>${amount} XDAI</strong>
+      Checking account balance and preparing transaction...<br>
+    `;
+
+    // Add decrypted private key to Web3 wallet
     const hongbaoAccount = web3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
     web3.eth.accounts.wallet.add(hongbaoAccount);
 
     const balance = BigInt(await web3.eth.getBalance(hongbaoAccount.address));
     if (balance === BigInt(0)) {
-      alert('No funds available to sweep.');
+      alert("No funds available to sweep.");
+      detailsElement.innerHTML += "No funds available to sweep.";
       return;
     }
 
-    const receiverAccount = await connectMetaMask();
+    // Fetch gas details
     const gasPrice = BigInt(await web3.eth.getGasPrice());
     const gasLimit = BigInt(21000);
     const gasCost = gasPrice * gasLimit;
 
     if (balance <= gasCost) {
-      alert('Insufficient funds to cover gas fees.');
+      alert("Insufficient funds to cover gas fees.");
+      detailsElement.innerHTML += "Insufficient funds to cover gas fees.";
       return;
     }
 
+    // Prepare and sign transaction
+    const receiverAccount = await connectMetaMask();
     const tx = {
       from: hongbaoAccount.address,
       to: receiverAccount,
@@ -184,19 +200,24 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
       gasPrice: gasPrice.toString(),
     };
 
+    detailsElement.innerHTML += "Signing transaction and sending funds...<br>";
     const signedTx = await hongbaoAccount.signTransaction(tx);
     await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
 
+    // Update result and visual elements
     resultElement.textContent = `Funds swept to your wallet: ${receiverAccount}`;
-    resultElement.classList.remove('hidden');
+    resultElement.classList.remove('hidden'); // Ensure it's visible
     hongbaoVisual.classList.add('opened');
 
-    alert('Hongbao redeemed and funds transferred to your wallet.');
+    detailsElement.innerHTML += "Transaction confirmed! Funds successfully transferred.";
+    alert(`Hongbao redeemed! Funds have been transferred to your wallet: ${receiverAccount}`);
   } catch (error) {
     console.error('Error redeeming and sweeping Hongbao:', error);
     alert('Failed to redeem or sweep Hongbao.');
   }
 }
+
+
 
 async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
   try {
@@ -213,9 +234,11 @@ async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
     const hongbaoVisual = document.getElementById("hongbao-visual-redeem");
     const resultElement = document.getElementById("redeem-result");
 
+    // Update details section to show progress
     detailsElement.textContent = "Requesting decryption key from Shutter...";
     detailsElement.classList.remove("hidden");
 
+    // Request decryption key
     const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
       encrypted_msg: encryptedKey,
       timestamp,
@@ -223,13 +246,23 @@ async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
 
     const decryptedPrivateKey = decryptResponse.data.message;
 
-    // Add the private key to the Web3 wallet
+    // Update details with decryption progress
+    detailsElement.innerHTML = `
+      Shutter Keypers generated the decryption key to decrypt one-time use private key.<br>
+      Decryption key: <strong>${decryptedPrivateKey}</strong><br>
+      Decryption successful!<br>
+      Amount gifted: <strong>${amount} XDAI</strong>
+      Checking account balance and preparing transaction...<br>
+    `;
+
+    // Add decrypted private key to Web3 wallet
     const hongbaoAccount = web3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
     web3.eth.accounts.wallet.add(hongbaoAccount);
 
     const balance = BigInt(await web3.eth.getBalance(hongbaoAccount.address));
     if (balance === BigInt(0)) {
       alert("No funds available to sweep.");
+      detailsElement.innerHTML += "No funds available to sweep.";
       return;
     }
 
@@ -239,10 +272,11 @@ async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
 
     if (balance <= gasCost) {
       alert("Insufficient funds to cover gas fees.");
+      detailsElement.innerHTML += "Insufficient funds to cover gas fees.";
       return;
     }
 
-    // Construct transaction
+    // Prepare and sign transaction
     const tx = {
       from: hongbaoAccount.address,
       to: wallet.address, // Send to Passkey Wallet Address
@@ -251,51 +285,107 @@ async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
       gasPrice: gasPrice.toString(),
     };
 
+    detailsElement.innerHTML += "Signing transaction and sending funds...<br>";
     const signedTx = await hongbaoAccount.signTransaction(tx);
     await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
 
-    detailsElement.innerHTML = `
-      Funds successfully redeemed to Passkey Wallet: <strong>${wallet.address}</strong>.<br>
-      Amount: ${web3.utils.fromWei((balance - gasCost).toString(), "ether")} XDAI
+    // Update result and visual elements
+    resultElement.innerHTML = `
+      Funds swept to Passkey Wallet: <strong>${wallet.address}</strong>.<br>
+      <a href="wallet.html" target="_blank">Manage Wallet</a>
     `;
-    detailsElement.classList.remove("hidden");
+    resultElement.classList.remove("hidden");
     hongbaoVisual.classList.add("opened");
 
+    detailsElement.innerHTML += `
+      Transaction confirmed!<br>
+      Funds successfully transferred to Passkey Wallet: <strong>${wallet.address}</strong>.
+      Redeemed amount: ${web3.utils.fromWei((balance - gasCost).toString(), "ether")} XDAI.<br>
+    `;
     alert(`Hongbao redeemed and funds transferred to Passkey Wallet: ${wallet.address}`);
   } catch (error) {
     console.error("Error redeeming Hongbao with Passkey Wallet:", error);
+    detailsElement.innerHTML += "Error during redemption. Please check the console for details.";
     alert("Failed to redeem Hongbao with Passkey Wallet.");
   }
 }
 
 
 
+
+
 // Populate fields from URL hash
 async function populateFieldsFromHash() {
   const hash = window.location.hash.substring(1);
-  const params = new URLSearchParams(hash.split('?')[1]);
-  const encryptedKey = params.get('key');
-  const timestamp = params.get('timestamp');
-  const amount = params.get('amount');
+  const params = new URLSearchParams(hash.split("?")[1]);
+  const encryptedKey = params.get("key");
+  const timestamp = params.get("timestamp");
+  const amount = params.get("amount");
 
-  const senderSection = document.getElementById('sender-section');
-  const receiverSection = document.getElementById('receiver-section');
-  const hongbaoVisual = document.getElementById('hongbao-visual-redeem');
+  const senderSection = document.getElementById("sender-section");
+  const receiverSection = document.getElementById("receiver-section");
+  const hongbaoVisual = document.getElementById("hongbao-visual-redeem");
+  const detailsElement = document.getElementById("redemption-details");
 
-  senderSection.classList.add('hidden');
-  receiverSection.classList.add('hidden');
+  senderSection.classList.add("hidden");
+  receiverSection.classList.add("hidden");
 
   if (encryptedKey && timestamp && amount) {
-    receiverSection.classList.remove('hidden');
-    document.getElementById('hongbao-key').value = encryptedKey;
-    document.getElementById('hongbao-timestamp').value = timestamp;
-    document.getElementById('redeem-hongbao').setAttribute('data-amount', amount);
-    hongbaoVisual.classList.remove('hidden');
+    receiverSection.classList.remove("hidden");
+    document.getElementById("hongbao-key").value = encryptedKey;
+    document.getElementById("hongbao-timestamp").value = timestamp;
+    document.getElementById("redeem-hongbao").setAttribute("data-amount", amount);
+    hongbaoVisual.classList.remove("hidden");
+
     startCountdown(parseInt(timestamp, 10));
+
+    // Show initial status
+    detailsElement.textContent = "Checking Hongbao status...";
+    detailsElement.classList.remove("hidden");
+
+    try {
+      const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
+        encrypted_msg: encryptedKey,
+        timestamp: parseInt(timestamp, 10),
+      });
+
+      const decryptedPrivateKey = decryptResponse.data.message;
+
+      // Add the private key to check balance
+      const hongbaoAccount = web3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
+      web3.eth.accounts.wallet.add(hongbaoAccount);
+
+      // Check balance after decryption
+      await checkHongbaoBalance(hongbaoAccount.address, amount);
+    } catch (error) {
+      console.error("Error retrieving decryption key:", error);
+      detailsElement.textContent = "Error retrieving decryption key. The Hongbao might still be locked.";
+    }
   } else {
-    senderSection.classList.remove('hidden');
+    senderSection.classList.remove("hidden");
   }
 }
+
+
+async function checkHongbaoBalance(hongbaoAccountAddress, expectedAmount) {
+  const detailsElement = document.getElementById("redemption-details");
+
+  try {
+    const balance = BigInt(await web3.eth.getBalance(hongbaoAccountAddress));
+
+    if (balance === BigInt(0)) {
+      detailsElement.innerHTML = "<strong>Status:</strong> This Hongbao has already been claimed.";
+    } else {
+      const formattedBalance = web3.utils.fromWei(balance.toString(), "ether");
+      detailsElement.innerHTML = `<strong>Status:</strong> Hongbao available! Current balance: ${formattedBalance} XDAI (Expected: ${expectedAmount} XDAI)`;
+    }
+  } catch (error) {
+    console.error("Error checking Hongbao balance:", error);
+    detailsElement.textContent = "Error retrieving balance. Please try again later.";
+  }
+}
+
+
 
 // Countdown timer
 function startCountdown(timestamp) {

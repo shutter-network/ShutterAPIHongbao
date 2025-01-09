@@ -3,64 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Biometric Ethereum Wallet</title>
+    <title>Hongbao Wallet</title>
     <style>
+        /* General Styling */
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
+            background-color: #ffe6e6; /* Light pink for a festive feel */
+            color: #333;
             margin: 0;
             padding: 0;
-            background-color: #f4f4f4;
-            color: #333;
         }
 
         header {
-            background-color: #0056b3;
+            background-color: #d32f2f; /* Hongbao red */
             color: white;
-            padding: 20px 0;
+            padding: 20px;
             text-align: center;
-            font-size: 1.5em;
+            font-size: 1.8em;
             font-weight: bold;
         }
 
         .container {
-            width: 90%;
-            max-width: 600px;
+            max-width: 800px;
             margin: 20px auto;
             background: white;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
 
         h2 {
-            font-family: Arial Black, sans-serif;
+            color: #d32f2f; /* Match the theme */
+            font-size: 1.6rem;
             margin-bottom: 10px;
-            color: #0056b3;
+            font-weight: bold;
         }
 
         button {
-            font-family: Arial Black, sans-serif;
-            background-color: #0056b3;
+            font-family: 'Arial Black', sans-serif;
+            background-color: #d32f2f;
             color: white;
             border: none;
-            padding: 10px 20px;
-            margin: 10px 0;
+            padding: 12px 20px;
+            font-size: 1.2rem;
+            border-radius: 6px;
             cursor: pointer;
-            border-radius: 5px;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
         }
 
         button:hover {
-            background-color: #003d82;
+            background-color: #a52828; /* Darker red */
+            transform: scale(1.05);
         }
 
         textarea, input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
+            width: 90%;
+            padding: 12px;
+            margin: 10px auto;
+            display: block;
             border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 1em;
+            border-radius: 6px;
+            font-size: 1rem;
         }
 
         textarea {
@@ -68,16 +72,55 @@
         }
 
         .balance {
-            text-align: center;
-            font-size: 1.2em;
+            font-size: 1.5rem;
             font-weight: bold;
-            color: #0056b3;
-            margin-top: 20px;
+            color: #d32f2f;
+            margin-top: 15px;
+        }
+
+        .details {
+            margin-top: 15px;
+            font-size: 1rem;
+            color: #333;
+            background-color: rgba(211, 47, 47, 0.1); /* Light red background */
+            padding: 10px;
+            border-radius: 6px;
+            text-align: left;
+            word-wrap: break-word;
+        }
+
+        /* Hongbao Visual */
+        .hongbao-visual {
+            background: linear-gradient(145deg, #d32f2f, #e53935);
+            width: 180px;
+            height: 240px;
+            margin: 20px auto;
+            position: relative;
+            border-radius: 10px;
+            border: 2px solid #a52828;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .hongbao-visual::before {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 120px 90px 0 90px;
+            border-color: #b71c1c transparent transparent transparent;
+            top: 0;
+            left: 0;
+            z-index: 10;
+        }
+
+        .hongbao-visual.opened::before {
+            transform: rotateX(-120deg);
         }
     </style>
 </head>
 <body>
-    <header>Biometric Ethereum Wallet</header>
+    <header>Hongbao Wallet</header>
     <div class="container">
         <h2>Create or Load Wallet</h2>
         <div>
