@@ -1,4 +1,4 @@
-# Updated Shutterized Hongbao DApp Documentation  
+# Sutterized Hongbao DApp  
 
 ![image](https://github.com/user-attachments/assets/6fd42470-50fe-473c-909b-476fc3d345ea)
 
@@ -8,6 +8,8 @@
 ## Overview  
 
 The **Shutterized Hongbao DApp** is a decentralized application for secure cryptocurrency gifting on the Gnosis Chain. The DApp leverages Shutter encryption for time-locked transfers and offers features like password protection and a non-custodial, in-browser passkey wallet for enhanced security and user control.  
+
+A **hongbao** is a traditional red envelope commonly used in Chinese culture to gift money during special occasions like Lunar New Year, symbolizing good luck and prosperity.
 
 **Important**: This is extremely early alpha software using NanoShutter, a simplified and centralized version of Shutter. Use at your own risk—assume potential loss of all connected funds.  
 
