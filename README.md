@@ -1,141 +1,164 @@
-# Shutterized Hongbao DApp Documentation
-
-![image](https://github.com/user-attachments/assets/8a18a818-532f-4384-9e96-018ef362507f)
+# Updated Shutterized Hongbao DApp Documentation  
 
 
-## Overview
-The Shutterized Hongbao DApp is a decentralized application designed for secure gifting of cryptocurrency (e.g., xDai) on the Gnosis Chain. Leveraging Shutter encryption technology, this app ensures that funds in the Hongbao (red envelope) are locked and can only be redeemed after a specified time. The app generates one-time-use private keys for secure gifting and uses Shutter Keypers to encrypt and later decrypt these keys at the specified time.
-
-Currently it's using NanoShutter, which is a highly simplified and centralized version of Shutter. Also this is extremely early alpha software, use at your own risk, assume you'll lose all funds in the wallet that is connected to the dapp.
-
-## Features
-1. **Secure Gifting**: Send cryptocurrency in a time-locked envelope.
-2. **Shutter Encryption**: Ensures funds are protected until the specified unlock time.
-3. **One-Time Private Key**: Each Hongbao uses a unique private key for added security.
-4. **User-Friendly Interface**: Simple setup and usage for both senders and recipients.
-
-## How It Works
-
-### Sending a Hongbao
-1. **Create a One-Time Private Key**:
-   - A new Ethereum account is generated with a unique private key.
-   - This key is encrypted using Shutter's encryption service and is time-locked until a specified timestamp.
-
-2. **Encrypt the Private Key**:
-   - The private key is sent to Shutter's encryption service, which generates an encrypted version of the key.
-
-3. **Fund the Hongbao**:
-   - The sender transfers the specified amount of xDai to the new Ethereum account linked to the Hongbao.
-
-4. **Generate a Redemption Link**:
-   - A link containing the encrypted private key, unlock timestamp, and amount is generated for the recipient.
-
-### Redeeming a Hongbao
-1. **Check the Status**:
-   - The recipient uses the link to access the DApp.
-   - The app verifies the balance of the Hongbao account and displays its availability.
-
-2. **Request Decryption**:
-   - Once the unlock time is reached, the recipient requests the decryption key from Shutter.
-
-3. **Transfer Funds**:
-   - The decrypted private key is used to transfer the funds from the Hongbao account to the recipient's wallet.
 
 ---
 
-## Shutter Encryption
+## Overview  
 
-Shutter encryption is a cryptographic technique designed for secure, time-locked transactions. It leverages a network of "Shutter Keypers" who collectively encrypt and decrypt data. In the Hongbao DApp:
+The **Shutterized Hongbao DApp** is a decentralized application for secure cryptocurrency gifting on the Gnosis Chain. The DApp leverages Shutter encryption for time-locked transfers and offers features like password protection and a non-custodial, in-browser passkey wallet for enhanced security and user control.  
 
-1. **Encryption**:
-   - The private key of the one-time-use account is encrypted by the Shutter Keypers. This ensures the key remains inaccessible until the specified unlock time.
-
-2. **Decryption**:
-   - At the unlock time, the Shutter Keypers provide the decryption key to reveal the private key, allowing the recipient to access the funds.
-
-### Why is Shutter Encryption Secure?
-- The encryption process is decentralized, ensuring no single entity controls the encryption or decryption process.
-- The encrypted private key cannot be accessed until the unlock time, preventing premature access.
+**Important**: This is extremely early alpha software using NanoShutter, a simplified and centralized version of Shutter. Use at your own risk—assume potential loss of all connected funds.  
 
 ---
 
-## One-Time Private Key: Why It's Safe
+## Features  
 
-### What is a One-Time Private Key?
-The one-time private key is a unique Ethereum private key generated for each Hongbao. It is used solely for the purpose of holding the gifted funds until redemption.
-
-### Benefits of One-Time Private Keys
-1. **Isolation**:
-   - The private key is specific to a single transaction, reducing risk.
-2. **Encryption**:
-   - The key is encrypted and stored securely until the unlock time.
-3. **Minimized Exposure**:
-   - Even if the private key is compromised, only the funds in that specific Hongbao are at risk.
-
-### Security Practices
-- The private key is never directly exposed to the sender or recipient during the gifting process.
-- Shutter's encryption ensures the key cannot be decrypted until the designated time.
+1. **Secure Gifting**: Send cryptocurrency with a time-locked mechanism.  
+2. **Shutter Encryption**: Ensures private keys remain protected until the specified unlock time.  
+3. **Password Protection**: Optionally secure Hongbao with an additional password for recipient decryption.  
+4. **Non-Custodial Passkey Wallet**: Fully in-browser wallet without custodial dependency.  
+5. **One-Time Private Keys**: Each Hongbao is tied to a unique private key.  
+6. **User-Friendly Interface**: Simple workflows for both senders and recipients.  
 
 ---
 
-## Key Components
+## New Features  
 
-### Frontend
-The DApp frontend:
-- Interacts with MetaMask for wallet connectivity.
-- Displays the Hongbao status and countdown to unlock.
-- Provides a seamless user experience for creating and redeeming Hongbaos.
+### Password Protection  
+- You can now protect the Hongbao with a password, adding another layer of security.  
+- The recipient must enter the password to decrypt the private key before claiming funds.  
 
-### Backend
-The backend:
-- Handles requests to Shutter’s encryption and decryption APIs.
-- Validates transaction details and ensures secure communication.
+### Non-Custodial In-Browser Passkey Wallet  
+- A fully non-custodial wallet created in-browser for secure fund management.  
+- Operates independently of MetaMask or other external wallets.  
+- Funds are swept directly into this wallet if selected during redemption.  
 
 ---
 
-## Usage Instructions
+## How It Works  
 
-### Sending a Hongbao
-1. **Connect MetaMask**:
-   - Ensure MetaMask is installed and connected to the Gnosis Chain.
-2. **Enter Amount**:
-   - Specify the amount of xDai to gift.
-3. **Create Hongbao**:
-   - Click “Create Hongbao” to generate a unique link.
-4. **Share the Link**:
-   - Copy and share the redemption link with the recipient.
+### Sending a Hongbao  
 
-### Redeeming a Hongbao
-1. **Open the Link**:
-   - Use the provided link to access the DApp.
-2. **Check Status**:
-   - Ensure the Hongbao is available and funds are unlocked.
-3. **Redeem Funds**:
-   - Click “Redeem Hongbao” to transfer funds to your wallet.
+1. **Create a One-Time Private Key**:  
+   - Generate a unique Ethereum account with a private key.  
+   - Encrypt the private key using Shutter's service, locking it until a specified timestamp.  
+
+2. **Encrypt the Private Key**:  
+   - Use Shutter encryption for time-locking.  
+   - Optionally, encrypt the result with a user-defined password.  
+
+3. **Fund the Hongbao**:  
+   - Transfer xDai to the newly generated account.  
+
+4. **Generate a Redemption Link**:  
+   - Share a link containing the encrypted private key, timestamp, and amount with the recipient.  
 
 ---
 
-## FAQ
+### Redeeming a Hongbao  
 
-### 1. What happens if the Hongbao is redeemed early?
-Funds cannot be accessed until the unlock time. The DApp ensures this by verifying the current time against the specified timestamp.
+1. **Verify the Hongbao**:  
+   - Open the redemption link and check Hongbao status.  
+   - If password-protected, enter the password to decrypt the key.  
 
-### 2. Is the private key secure?
-Yes. The private key is encrypted using Shutter’s decentralized encryption system and is inaccessible until the unlock time.
+2. **Request Decryption**:  
+   - After the unlock time, request the final decryption key from Shutter.  
 
-### 3. What if the recipient loses the redemption link?
-The link contains the encrypted private key and timestamp. Without the link, the Hongbao cannot be redeemed.
-
----
-
-## Technical Dependencies
-- **Web3.js**: For blockchain interactions.
-- **Axios**: For API communication with Shutter.
-- **Shutter Network**: Provides encryption and decryption services.
-- **MetaMask**: For wallet integration.
+3. **Sweep Funds**:  
+   - Use MetaMask or the in-browser passkey wallet to sweep funds to the recipient's wallet.  
 
 ---
 
-## Conclusion
-The Shutterized Hongbao DApp combines the tradition of gifting with the security of blockchain technology. By leveraging Shutter’s decentralized encryption and one-time private keys, it ensures a secure, user-friendly, and tamper-proof gifting experience.
+## Non-Custodial In-Browser Passkey Wallet  
 
+### Key Features  
+- **Decentralized**: Fully non-custodial and managed directly in the browser.  
+- **Secure**: Private keys are only accessible locally, within the user's browser session.  
+- **Independent**: Operates without reliance on MetaMask or other external wallets.  
+
+### Workflow  
+- Recipients can use the passkey wallet to redeem Hongbao and sweep funds securely into their locally stored wallet.  
+- The wallet is ephemeral—created and managed entirely in-browser, enhancing privacy.  
+
+---
+
+## Password Protection  
+
+### How It Works  
+- When creating a Hongbao, senders can set an optional password.  
+- Recipients must provide this password during redemption to decrypt the intermediate private key before requesting the final decryption from Shutter.  
+
+### Benefits  
+- Enhances security by ensuring only intended recipients can access the private key.  
+- Combines with time-lock encryption for double-layer protection.  
+
+---
+
+## Technical Flow  
+
+### Sending a Hongbao  
+1. **Generate Private Key**: A one-time-use private key is generated.  
+2. **Encrypt with Shutter**: The key is encrypted for time-lock protection.  
+3. **Optionally Encrypt with Password**: The Shutter-encrypted key is wrapped with an additional password encryption.  
+4. **Fund and Share**: Funds are transferred, and a redemption link is generated.  
+
+### Redeeming a Hongbao  
+1. **Decrypt with Password (if applicable)**: The recipient decrypts the key with the password.  
+2. **Decrypt with Shutter**: The final key is retrieved from Shutter after the unlock time.  
+3. **Sweep Funds**: Use the fully decrypted key to transfer funds to a MetaMask account or passkey wallet.  
+
+---
+
+## Usage Instructions  
+
+### Sending a Hongbao  
+1. **Choose Wallet**:  
+   - Use MetaMask or the passkey wallet for funding.  
+
+2. **Set Amount and Lock Time**:  
+   - Specify the amount and unlock timestamp.  
+
+3. **Add Password (Optional)**:  
+   - Enhance security with password protection.  
+
+4. **Create and Share**:  
+   - Generate the Hongbao and share the link with the recipient.  
+
+### Redeeming a Hongbao  
+1. **Verify Details**:  
+   - Open the Hongbao link and check its status.  
+
+2. **Provide Password (if required)**:  
+   - Enter the password to decrypt the key.  
+
+3. **Sweep Funds**:  
+   - Use MetaMask or the passkey wallet to claim funds.  
+
+---
+
+## FAQ  
+
+### What happens if the Hongbao is redeemed early?  
+Funds cannot be accessed before the unlock time.  
+
+### What if I lose my password?  
+If password-protected, losing the password makes decryption impossible.  
+
+### What happens if I lose my redemption link?  
+The link contains critical information. Losing it means the Hongbao cannot be redeemed.  
+
+---
+
+## Technical Dependencies  
+
+- **Web3.js**: Blockchain interactions.  
+- **Ethers.js**: Ethereum wallet integration for the passkey wallet.  
+- **CryptoJS & Web Crypto API**: Encryption and decryption utilities.  
+- **Shutter Network**: Encryption and decryption services.  
+
+---
+
+## Conclusion  
+
+The Shutterized Hongbao DApp combines secure time-locked gifting with decentralized privacy. With added features like password protection and a non-custodial passkey wallet, it ensures maximum flexibility, security, and accessibility for users.  
