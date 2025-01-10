@@ -160,7 +160,7 @@ async function decryptWithPassword(encryptedData, password, iv) {
 async function sendHongbao(amount) {
   try {
     const senderAccount = await connectMetaMask();
-    const releaseTimestamp = Math.floor(Date.now() / 1000) + 20; // Lock for 10 minutes
+    const releaseTimestamp = Math.floor(Date.now() / 1000) + 300; // Lock for 10 minutes
 
     const newAccount = web3.eth.accounts.create();
     const privateKey = newAccount.privateKey;
@@ -226,7 +226,7 @@ async function fundHongbaoWithPasskey(amount) {
     const provider = new ethers.JsonRpcProvider(GNOSIS_CHAIN_PARAMS.rpcUrls[0]);
     const walletWithProvider = wallet.connect(provider);
 
-    const releaseTimestamp = Math.floor(Date.now() / 1000) + 20; // Lock for 10 minutes
+    const releaseTimestamp = Math.floor(Date.now() / 1000) + 300; // Lock for 10 minutes
 
     const newAccount = ethers.Wallet.createRandom();
     const privateKey = newAccount.privateKey;
