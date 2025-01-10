@@ -31,7 +31,7 @@ export async function registerPasskey(walletName) {
         const credential = await navigator.credentials.create({
             publicKey: {
                 challenge: challenge,
-                rp: { name: "Gnosis Wallet" , id: "pepae.github.io" },
+                rp: { name: "Gnosis Wallet", id: "pepae.github.io" },
                 user: {
                     id: uniqueUserId,
                     name: `wallet-${bufferToHex(uniqueUserId)}`,

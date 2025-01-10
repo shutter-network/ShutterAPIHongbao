@@ -86,30 +86,110 @@ document.getElementById('hongbao-link').addEventListener('click', (event) => {
   copyToClipboard(link);
 });
 
-// Create and send Hongbao
+
+// AES Encryption using Web Crypto API
+async function encryptWithPassword(data, password) {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+  const derivedKey = await crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: encoder.encode("shutter_hongbao_salt"),
+      iterations: 100000,
+      hash: "SHA-256",
+    },
+    key,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt"]
+  );
+
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encrypted = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    derivedKey,
+    encoder.encode(data)
+  );
+
+  return {
+    encrypted: btoa(String.fromCharCode(...new Uint8Array(encrypted))),
+    iv: btoa(String.fromCharCode(...iv)),
+  };
+}
+
+// AES Decryption using Web Crypto API
+async function decryptWithPassword(encryptedData, password, iv) {
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(password),
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+  const derivedKey = await crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: encoder.encode("shutter_hongbao_salt"),
+      iterations: 100000,
+      hash: "SHA-256",
+    },
+    key,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["decrypt"]
+  );
+
+  const decrypted = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: Uint8Array.from(atob(iv), (c) => c.charCodeAt(0)) },
+    derivedKey,
+    Uint8Array.from(atob(encryptedData), (c) => c.charCodeAt(0))
+  );
+
+  return decoder.decode(decrypted);
+}
+
+
 async function sendHongbao(amount) {
   try {
     const senderAccount = await connectMetaMask();
-    const releaseTimestamp = Math.floor(Date.now() / 1000) + 300; // Lock for 10 minutes
+    const releaseTimestamp = Math.floor(Date.now() / 1000) + 20; // Lock for 10 minutes
 
     const newAccount = web3.eth.accounts.create();
     const privateKey = newAccount.privateKey;
     const recipientAddress = newAccount.address;
 
-    const detailsElement = document.getElementById('hongbao-details');
-    const linkElement = document.getElementById('hongbao-link');
-    const hongbaoVisual = document.getElementById('hongbao-visual');
+    const password = document.getElementById("hongbao-password").value.trim();
 
-    detailsElement.textContent = 'Requesting encryption key from Shutter...';
-    detailsElement.classList.remove('hidden');
+    const detailsElement = document.getElementById("hongbao-details");
+    const linkElement = document.getElementById("hongbao-link");
+    const hongbaoVisual = document.getElementById("hongbao-visual");
 
-    const registerResponse = await axios.post(`${NANOSHUTTER_API_BASE}/encrypt/with_time`, {
+    detailsElement.textContent = "Requesting encryption key from Shutter...";
+    detailsElement.classList.remove("hidden");
+
+    // Encrypt with Shutter
+    const shutterResponse = await axios.post(`${NANOSHUTTER_API_BASE}/encrypt/with_time`, {
       cypher_text: privateKey,
       timestamp: releaseTimestamp,
     });
 
-    const encryptedKey = registerResponse.data.message;
-    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(encryptedKey)}&timestamp=${releaseTimestamp}&amount=${amount}`;
+    let shutterEncryptedKey = shutterResponse.data.message;
+
+    // Encrypt Shutter-encrypted key with password if provided
+    if (password) {
+      const passwordEncrypted = await encryptWithPassword(shutterEncryptedKey, password);
+      shutterEncryptedKey = JSON.stringify(passwordEncrypted); // Combine encrypted data and IV
+    }
+
+    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(shutterEncryptedKey)}&timestamp=${releaseTimestamp}&amount=${amount}&protected=${!!password}`;
 
     detailsElement.innerHTML = `
       Identity registered successfully with Shutter!<br>
@@ -118,22 +198,22 @@ async function sendHongbao(amount) {
       Funds are locked until: <strong>${new Date(releaseTimestamp * 1000).toLocaleString()}</strong>
     `;
     linkElement.textContent = `Share this link: ${link}`;
-    linkElement.classList.remove('hidden');
+    linkElement.classList.remove("hidden");
 
-    const hongbaoAmountWei = web3.utils.toWei(amount.toString(), 'ether');
+    const hongbaoAmountWei = web3.utils.toWei(amount.toString(), "ether");
     await web3.eth.sendTransaction({
       from: senderAccount,
       to: recipientAddress,
       value: hongbaoAmountWei,
     });
 
-    hongbaoVisual.classList.remove('hidden');
-    hongbaoVisual.classList.add('sealed');
+    hongbaoVisual.classList.remove("hidden");
+    hongbaoVisual.classList.add("sealed");
 
-    alert('Hongbao created successfully! Share the link with the recipient.');
+    alert("Hongbao created successfully! Share the link with the recipient.");
   } catch (error) {
-    console.error('Error creating Hongbao:', error);
-    alert('Failed to create Hongbao.');
+    console.error("Error creating Hongbao:", error);
+    alert("Failed to create Hongbao.");
   }
 }
 
@@ -146,11 +226,13 @@ async function fundHongbaoWithPasskey(amount) {
     const provider = new ethers.JsonRpcProvider(GNOSIS_CHAIN_PARAMS.rpcUrls[0]);
     const walletWithProvider = wallet.connect(provider);
 
-    const releaseTimestamp = Math.floor(Date.now() / 1000) + 300; // Lock for 5 minutes
+    const releaseTimestamp = Math.floor(Date.now() / 1000) + 20; // Lock for 10 minutes
 
     const newAccount = ethers.Wallet.createRandom();
     const privateKey = newAccount.privateKey;
     const recipientAddress = newAccount.address;
+
+    const password = document.getElementById("hongbao-password").value.trim();
 
     const detailsElement = document.getElementById("hongbao-details");
     const linkElement = document.getElementById("hongbao-link");
@@ -159,13 +241,21 @@ async function fundHongbaoWithPasskey(amount) {
     detailsElement.textContent = "Requesting encryption key from Shutter...";
     detailsElement.classList.remove("hidden");
 
-    const registerResponse = await axios.post(`${NANOSHUTTER_API_BASE}/encrypt/with_time`, {
+    // Encrypt with Shutter
+    const shutterResponse = await axios.post(`${NANOSHUTTER_API_BASE}/encrypt/with_time`, {
       cypher_text: privateKey,
       timestamp: releaseTimestamp,
     });
 
-    const encryptedKey = registerResponse.data.message;
-    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(encryptedKey)}&timestamp=${releaseTimestamp}&amount=${amount}`;
+    let shutterEncryptedKey = shutterResponse.data.message;
+
+    // Encrypt Shutter-encrypted key with password if provided
+    if (password) {
+      const passwordEncrypted = await encryptWithPassword(shutterEncryptedKey, password);
+      shutterEncryptedKey = JSON.stringify(passwordEncrypted); // Combine encrypted data and IV
+    }
+
+    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(shutterEncryptedKey)}&timestamp=${releaseTimestamp}&amount=${amount}&protected=${!!password}`;
 
     detailsElement.innerHTML = `
       Identity registered successfully with Shutter!<br>
@@ -220,10 +310,6 @@ async function fundHongbaoWithPasskey(amount) {
   }
 }
 
-
-
-
-// Redeem Hongbao and sweep funds
 async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
   try {
     await ensureGnosisChain(); // Ensure the user is on the correct network
@@ -234,44 +320,63 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
       return;
     }
 
-    const detailsElement = document.getElementById('redemption-details');
-    const hongbaoVisual = document.getElementById('hongbao-visual-redeem');
-    const resultElement = document.getElementById('redeem-result');
+    const detailsElement = document.getElementById("redemption-details");
+    const hongbaoVisual = document.getElementById("hongbao-visual-redeem");
+    const resultElement = document.getElementById("redeem-result");
 
-    // Update details section to show progress
-    detailsElement.textContent = 'Requesting decryption key from Shutter...';
-    detailsElement.classList.remove('hidden'); // Ensure it's visible
+    detailsElement.textContent = "Checking for password protection...";
+    detailsElement.classList.remove("hidden");
 
-    // Request decryption key
-    const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
-      encrypted_msg: encryptedKey,
-      timestamp,
-    });
+    let decryptedKey = encryptedKey;
 
-    const decryptedPrivateKey = decryptResponse.data.message;
+    // Step 1: Use updated decrypted key from UI
+    const keyField = document.getElementById("hongbao-key").value;
+    if (keyField.startsWith("0x") && keyField.length === 66) {
+      // If the key is fully decrypted, use it
+      decryptedKey = keyField;
+    } else {
+      // Check for optional password protection
+      const isProtected = new URLSearchParams(window.location.search).get("protected") === "true";
+      if (isProtected) {
+        const password = document.getElementById("redeem-password").value.trim();
+        if (!password) {
+          alert("Password is required to decrypt this Hongbao.");
+          return;
+        }
 
-    // Update details with decryption progress
-    detailsElement.innerHTML = `
-      Shutter Keypers generated the decryption key to decrypt one-time use private key.<br>
-      Decryption key: <strong>${decryptedPrivateKey}</strong><br>
-      Decryption successful!<br>
-      Amount gifted: <strong>${amount} XDAI</strong>
-      Checking account balance and preparing transaction...<br>
-    `;
+        try {
+          const encryptedObject = JSON.parse(decryptedKey); // Parse the stored object
+          decryptedKey = await decryptWithPassword(encryptedObject.encrypted, password, encryptedObject.iv);
+        } catch (error) {
+          alert("Invalid password. Unable to decrypt the Hongbao.");
+          return;
+        }
+      }
 
-    // Add decrypted private key to Web3 wallet
-    const hongbaoAccount = web3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
-    web3.eth.accounts.wallet.add(hongbaoAccount);
+      // Step 2: Decrypt with Shutter
+      const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
+        encrypted_msg: decryptedKey,
+        timestamp,
+      });
 
-    const balance = BigInt(await web3.eth.getBalance(hongbaoAccount.address));
+      decryptedKey = decryptResponse.data.message;
+
+      // Update the key field with the fully decrypted key for consistency
+      document.getElementById("hongbao-key").value = decryptedKey;
+    }
+
+    // Step 3: Use the fully decrypted key for all operations
+    const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(decryptedKey);
+    fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
+
+    const balance = BigInt(await fallbackWeb3.eth.getBalance(hongbaoAccount.address));
     if (balance === BigInt(0)) {
       alert("No funds available to sweep.");
       detailsElement.innerHTML += "No funds available to sweep.";
       return;
     }
 
-    // Fetch gas details
-    const gasPrice = BigInt(await web3.eth.getGasPrice());
+    const gasPrice = BigInt(await fallbackWeb3.eth.getGasPrice());
     const gasLimit = BigInt(21000);
     const gasCost = gasPrice * gasLimit;
 
@@ -281,7 +386,6 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
       return;
     }
 
-    // Prepare and sign transaction
     const receiverAccount = await connectMetaMask();
     const tx = {
       from: hongbaoAccount.address,
@@ -293,24 +397,25 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
 
     detailsElement.innerHTML += "Signing transaction and sending funds...<br>";
     const signedTx = await hongbaoAccount.signTransaction(tx);
-    await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
+    await fallbackWeb3.eth.sendSignedTransaction(signedTx.rawTransaction);
 
-    // Update result and visual elements
     resultElement.textContent = `Funds swept to your wallet: ${receiverAccount}`;
-    resultElement.classList.remove('hidden'); // Ensure it's visible
-    hongbaoVisual.classList.add('opened');
+    resultElement.classList.remove("hidden");
+    hongbaoVisual.classList.add("opened");
 
     detailsElement.innerHTML += "Transaction confirmed! Funds successfully transferred.";
     alert(`Hongbao redeemed! Funds have been transferred to your wallet: ${receiverAccount}`);
   } catch (error) {
-    console.error('Error redeeming and sweeping Hongbao:', error);
-    alert('Failed to redeem or sweep Hongbao.');
+    console.error("Error redeeming and sweeping Hongbao:", error);
+    alert("Failed to redeem or sweep Hongbao.");
   }
 }
 
+
+
 async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
   try {
-    const wallet = await registerPasskey("Hongbao Wallet");
+    const wallet = await authenticateWallet(); // Load the existing passkey wallet
     console.log("Passkey Wallet Address:", wallet.address);
 
     const currentTime = Math.floor(Date.now() / 1000);
@@ -320,17 +425,52 @@ async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
     }
 
     const detailsElement = document.getElementById("redemption-details");
-    detailsElement.textContent = "Requesting decryption key from Shutter...";
+    const hongbaoVisual = document.getElementById("hongbao-visual-redeem");
+    const resultElement = document.getElementById("redeem-result");
+
+    detailsElement.textContent = "Checking for password protection...";
     detailsElement.classList.remove("hidden");
 
-    const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
-      encrypted_msg: encryptedKey,
-      timestamp,
-    });
+    let decryptedKey = encryptedKey;
 
-    const decryptedPrivateKey = decryptResponse.data.message;
+    // Step 1: Use updated decrypted key from UI
+    const keyField = document.getElementById("hongbao-key").value;
+    if (keyField.startsWith("0x") && keyField.length === 66) {
+      // If the key is fully decrypted, use it
+      decryptedKey = keyField;
+    } else {
+      // Check for optional password protection
+      const isProtected = new URLSearchParams(window.location.search).get("protected") === "true";
+      if (isProtected) {
+        const password = document.getElementById("redeem-password").value.trim();
+        if (!password) {
+          alert("Password is required to decrypt this Hongbao.");
+          return;
+        }
 
-    const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
+        try {
+          const encryptedObject = JSON.parse(decryptedKey); // Parse the stored object
+          decryptedKey = await decryptWithPassword(encryptedObject.encrypted, password, encryptedObject.iv);
+        } catch (error) {
+          alert("Invalid password. Unable to decrypt the Hongbao.");
+          return;
+        }
+      }
+
+      // Step 2: Decrypt with Shutter
+      const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
+        encrypted_msg: decryptedKey,
+        timestamp,
+      });
+
+      decryptedKey = decryptResponse.data.message;
+
+      // Update the key field with the fully decrypted key for consistency
+      document.getElementById("hongbao-key").value = decryptedKey;
+    }
+
+    // Step 3: Use the fully decrypted key for all operations
+    const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(decryptedKey);
     fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
 
     const balance = BigInt(await fallbackWeb3.eth.getBalance(hongbaoAccount.address));
@@ -356,24 +496,25 @@ async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
       value: (balance - gasCost).toString(),
       gas: 21000,
       gasPrice: gasPrice.toString(),
-      chainId: parseInt(GNOSIS_CHAIN_PARAMS.chainId, 16), // Explicit chain ID
+      chainId: parseInt(GNOSIS_CHAIN_PARAMS.chainId, 16),
     };
 
-    detailsElement.innerHTML += "Signing transaction and sending funds...";
+    detailsElement.innerHTML += "Signing transaction and sending funds...<br>";
     const signedTx = await hongbaoAccount.signTransaction(tx);
     await fallbackWeb3.eth.sendSignedTransaction(signedTx.rawTransaction);
 
-    detailsElement.innerHTML = `
-      Funds successfully transferred to Passkey Wallet: <strong>${wallet.address}</strong>.<br>
-      Redeemed amount: ${fallbackWeb3.utils.fromWei((balance - gasCost).toString(), "ether")} XDAI.<br>
-      <a href="wallet.html" target="_blank">Manage Wallet</a>
-    `;
-    alert(`Hongbao redeemed and funds transferred to Passkey Wallet: ${wallet.address}`);
+    resultElement.textContent = `Funds swept to your wallet: ${wallet.address}`;
+    resultElement.classList.remove("hidden");
+    hongbaoVisual.classList.add("opened");
+
+    detailsElement.innerHTML += "Transaction confirmed! Funds successfully transferred.";
+    alert(`Hongbao redeemed! Funds have been transferred to your wallet: ${wallet.address}`);
   } catch (error) {
     console.error("Error redeeming Hongbao with Passkey Wallet:", error);
     alert("Failed to redeem Hongbao with Passkey Wallet.");
   }
 }
+
 
 async function populateFieldsFromHash() {
   const hash = window.location.hash.substring(1);
@@ -503,6 +644,56 @@ document.getElementById("create-hongbao-with-passkey").addEventListener("click",
   }
   await fundHongbaoWithPasskey(amount);
 });
+
+document.getElementById("decrypt-password").addEventListener("click", async () => {
+  const encryptedKey = document.getElementById("hongbao-key").value;
+  const password = document.getElementById("redeem-password").value;
+  const timestamp = parseInt(document.getElementById("hongbao-timestamp").value, 10);
+
+  if (!password) {
+    alert("Please enter a password.");
+    return;
+  }
+
+  try {
+    // Step 1: Decrypt with password
+    const encryptedObject = JSON.parse(encryptedKey); // Parse the stored object
+    const passwordDecryptedKey = await decryptWithPassword(
+      encryptedObject.encrypted,
+      password,
+      encryptedObject.iv
+    );
+
+    if (!passwordDecryptedKey) {
+      throw new Error("Failed to decrypt with the provided password.");
+    }
+
+    // Step 2: Decrypt with Shutter
+    const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
+      encrypted_msg: passwordDecryptedKey,
+      timestamp,
+    });
+
+    const finalDecryptedKey = decryptResponse.data.message;
+
+    // Step 3: Check balance using the fully decrypted key
+    const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(finalDecryptedKey);
+    fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
+
+    const amount = document.getElementById("redeem-hongbao").getAttribute("data-amount");
+    await checkHongbaoBalance(hongbaoAccount.address, amount);
+
+    // Update the "Encrypted Key" field with the final decrypted key
+    document.getElementById("hongbao-key").value = finalDecryptedKey;
+
+    alert("Successfully decrypted, checked balance, and updated the key!");
+  } catch (error) {
+    console.error("Error during decryption or balance check:", error);
+    alert("Failed to decrypt or check balance. Please ensure the password and key are correct.");
+  }
+});
+
+
 
 
 

@@ -18,16 +18,19 @@
       <div class="hongbao-envelope">
         <label for="hongbao-amount">💰 Amount (XDAI):</label>
         <input type="number" id="hongbao-amount" class="input" step="0.01" placeholder="Enter amount">
+        
+        <label for="hongbao-password">🔒 Password (optional):</label>
+        <input type="password" id="hongbao-password" class="input" placeholder="Enter a password to protect the Hongbao">
+        
         <button id="create-hongbao" class="button">Create Hongbao with MetaMask</button>
         <button id="create-hongbao-with-passkey" class="button">Fund Hongbao with Passkey Wallet</button>
+        
         <p>Note, the receiver doesn't need any funds, nor a wallet to claim</p>
         <p id="hongbao-details" class="details hidden"></p>
         <p id="hongbao-link" class="link hidden"></p>
         <div id="hongbao-visual" class="hongbao-visual hidden"></div>
       </div>
     </div>
-    
-    
 
     <!-- Receiver Section -->
     <div id="receiver-section" class="section hidden">
@@ -42,23 +45,33 @@
       <div class="hongbao-envelope">
         <label for="hongbao-key">🔑 Encrypted Key:</label>
         <input type="text" id="hongbao-key" class="input" placeholder="Paste encrypted key from link">
+        
         <label for="hongbao-timestamp">⏰ Timestamp:</label>
         <input type="text" id="hongbao-timestamp" class="input" placeholder="Paste timestamp from link">
+        
+        <label for="redeem-password">🔑 Password (if protected):</label>
+        <input type="password" id="redeem-password" class="input" placeholder="Enter the password">
+        
         <h3>Countdown to Unlock:</h3>
         <p id="countdown" class="countdown"></p>
+        
+        <button id="decrypt-password" class="button">Decrypt with Password</button>
         <button id="redeem-hongbao" class="button">Redeem Hongbao to your active MetaMask account</button>
         <button id="redeem-passkey-wallet" class="button">Redeem Hongbao to Passkey Wallet</button>
+        
         <p id="redemption-details" class="details hidden"></p>
         <p id="redeem-result" class="details hidden"></p>
         <div id="hongbao-visual-redeem" class="hongbao-visual hidden"></div>
       </div>
+      
       <div id="create-own-section">
         <button id="create-own-hongbao" class="button">Create Your Own Hongbao</button>
       </div>
     </div>
   </div>
+  
   <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <script type="module" src="app.js"></script>
-
 </body>
 </html>
