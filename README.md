@@ -1,5 +1,6 @@
 # Updated Shutterized Hongbao DApp Documentation  
 
+![image](https://github.com/user-attachments/assets/6fd42470-50fe-473c-909b-476fc3d345ea)
 
 
 ---
@@ -71,6 +72,10 @@ The **Shutterized Hongbao DApp** is a decentralized application for secure crypt
 ---
 
 ## Non-Custodial In-Browser Passkey Wallet  
+
+![image](https://github.com/user-attachments/assets/0a6df85f-2d46-4507-af62-46739d99565a)
+
+
 
 ### Key Features  
 - **Decentralized**: Fully non-custodial and managed directly in the browser.  
