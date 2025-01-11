@@ -415,8 +415,18 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
 
 async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
   try {
-    const wallet = await authenticateWallet(); // Load the existing passkey wallet
-    console.log("Passkey Wallet Address:", wallet.address);
+    let wallet;
+    try {
+      // Attempt to authenticate the existing passkey wallet
+      wallet = await authenticateWallet();
+      console.log("Passkey Wallet Address (Loaded):", wallet.address);
+    } catch (authError) {
+      console.warn("No existing wallet found, creating a new one...");
+      // Create a new passkey wallet if none exists
+      wallet = await registerPasskey("My Hongbao Wallet");
+      console.log("Passkey Wallet Address (Created):", wallet.address);
+      alert("New passkey wallet created successfully. Remember to use it for future transactions.");
+    }
 
     const currentTime = Math.floor(Date.now() / 1000);
     if (currentTime < timestamp) {
