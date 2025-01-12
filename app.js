@@ -413,11 +413,35 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
 
 
 
-async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
+async function claimToNewWallet(encryptedKey, timestamp, amount) {
   try {
-    const wallet = await authenticateWallet(); // Load the existing passkey wallet
-    console.log("Passkey Wallet Address:", wallet.address);
+    const wallet = await registerPasskey("My New Hongbao Wallet"); // Create a new passkey wallet
+    console.log("New Passkey Wallet Address:", wallet.address);
 
+    // Proceed to redeem and sweep with the new wallet
+    await redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet);
+    alert(`A new wallet was created successfully, and funds were claimed to: ${wallet.address}`);
+  } catch (error) {
+    console.error("Error claiming to a new wallet:", error);
+    alert("Failed to claim Hongbao to a new wallet.");
+  }
+}
+
+async function claimToExistingWallet(encryptedKey, timestamp, amount) {
+  try {
+    const wallet = await authenticateWallet(); // Authenticate an existing wallet
+    console.log("Existing Passkey Wallet Address:", wallet.address);
+
+    // Proceed to redeem and sweep with the existing wallet
+    await redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet);
+  } catch (error) {
+    console.error("Error claiming to an existing wallet:", error);
+    alert("Failed to claim Hongbao to an existing wallet.");
+  }
+}
+
+async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) {
+  try {
     const currentTime = Math.floor(Date.now() / 1000);
     if (currentTime < timestamp) {
       alert(`Hongbao is locked until ${new Date(timestamp * 1000).toLocaleString()}`);
@@ -511,7 +535,7 @@ async function redeemHongbaoWithPasskey(encryptedKey, timestamp, amount) {
     alert(`Hongbao redeemed! Funds have been transferred to your wallet: ${wallet.address}`);
   } catch (error) {
     console.error("Error redeeming Hongbao with Passkey Wallet:", error);
-    alert("Failed to redeem Hongbao with Passkey Wallet.");
+    alert("Failed to redeem Hongbao with the specified wallet.");
   }
 }
 
@@ -629,11 +653,18 @@ document.getElementById('redeem-hongbao').addEventListener('click', () => {
   redeemHongbaoAndSweep(encryptedKey, timestamp, amount);
 });
 
-document.getElementById('redeem-passkey-wallet').addEventListener('click', () => {
-  const encryptedKey = document.getElementById('hongbao-key').value;
-  const timestamp = parseInt(document.getElementById('hongbao-timestamp').value, 10);
-  const amount = document.getElementById('redeem-hongbao').getAttribute('data-amount');
-  redeemHongbaoWithPasskey(encryptedKey, timestamp, amount);
+document.getElementById("redeem-new-wallet").addEventListener("click", () => {
+  const encryptedKey = document.getElementById("hongbao-key").value;
+  const timestamp = parseInt(document.getElementById("hongbao-timestamp").value, 10);
+  const amount = document.getElementById("redeem-hongbao").getAttribute("data-amount");
+  claimToNewWallet(encryptedKey, timestamp, amount);
+});
+
+document.getElementById("redeem-existing-wallet").addEventListener("click", () => {
+  const encryptedKey = document.getElementById("hongbao-key").value;
+  const timestamp = parseInt(document.getElementById("hongbao-timestamp").value, 10);
+  const amount = document.getElementById("redeem-hongbao").getAttribute("data-amount");
+  claimToExistingWallet(encryptedKey, timestamp, amount);
 });
 
 document.getElementById("create-hongbao-with-passkey").addEventListener("click", async () => {
