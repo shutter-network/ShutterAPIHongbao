@@ -633,99 +633,113 @@ function startCountdown(timestamp) {
     countdownElement.textContent = `${hours}h ${minutes}m ${seconds}s remaining.`;
   }, 1000);
 }
-
-// Add event listeners
-document.getElementById('create-own-hongbao').addEventListener('click', () => {
-  document.getElementById('receiver-section').classList.add('hidden');
-  document.getElementById('sender-section').classList.remove('hidden');
-  document.querySelector('.title').textContent = '🎁 Hongbao Gifting DApp';
-});
-
-document.getElementById('create-hongbao').addEventListener('click', async () => {
-  const amount = parseFloat(document.getElementById('hongbao-amount').value);
-  sendHongbao(amount);
-});
-
-document.getElementById('redeem-hongbao').addEventListener('click', () => {
-  const encryptedKey = document.getElementById('hongbao-key').value;
-  const timestamp = parseInt(document.getElementById('hongbao-timestamp').value, 10);
-  const amount = document.getElementById('redeem-hongbao').getAttribute('data-amount');
-  redeemHongbaoAndSweep(encryptedKey, timestamp, amount);
-});
-
-document.getElementById("redeem-new-wallet").addEventListener("click", () => {
-  const encryptedKey = document.getElementById("hongbao-key").value;
-  const timestamp = parseInt(document.getElementById("hongbao-timestamp").value, 10);
-  const amount = document.getElementById("redeem-hongbao").getAttribute("data-amount");
-  claimToNewWallet(encryptedKey, timestamp, amount);
-});
-
-document.getElementById("redeem-existing-wallet").addEventListener("click", () => {
-  const encryptedKey = document.getElementById("hongbao-key").value;
-  const timestamp = parseInt(document.getElementById("hongbao-timestamp").value, 10);
-  const amount = document.getElementById("redeem-hongbao").getAttribute("data-amount");
-  claimToExistingWallet(encryptedKey, timestamp, amount);
-});
-
-document.getElementById("create-hongbao-with-passkey").addEventListener("click", async () => {
-  const amount = parseFloat(document.getElementById("hongbao-amount").value);
-  if (!amount || amount <= 0) {
-    alert("Please enter a valid amount.");
-    return;
-  }
-  await fundHongbaoWithPasskey(amount);
-});
-
-document.getElementById("decrypt-password").addEventListener("click", async () => {
-  const encryptedKey = document.getElementById("hongbao-key").value;
-  const password = document.getElementById("redeem-password").value;
-  const timestamp = parseInt(document.getElementById("hongbao-timestamp").value, 10);
-
-  if (!password) {
-    alert("Please enter a password.");
-    return;
-  }
-
-  try {
-    // Step 1: Decrypt with password
-    const encryptedObject = JSON.parse(encryptedKey); // Parse the stored object
-    const passwordDecryptedKey = await decryptWithPassword(
-      encryptedObject.encrypted,
-      password,
-      encryptedObject.iv
-    );
-
-    if (!passwordDecryptedKey) {
-      throw new Error("Failed to decrypt with the provided password.");
-    }
-
-    // Step 2: Decrypt with Shutter
-    const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
-      encrypted_msg: passwordDecryptedKey,
-      timestamp,
+document.addEventListener('DOMContentLoaded', () => {
+  // Event listeners for sender section
+  const createOwnHongbaoButton = document.getElementById('create-own-hongbao');
+  if (createOwnHongbaoButton) {
+    createOwnHongbaoButton.addEventListener('click', () => {
+      document.getElementById('receiver-section').classList.add('hidden');
+      document.getElementById('sender-section').classList.remove('hidden');
+      document.querySelector('.title').textContent = '🎁 Hongbao Gifting DApp';
     });
-
-    const finalDecryptedKey = decryptResponse.data.message;
-
-    // Step 3: Check balance using the fully decrypted key
-    const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(finalDecryptedKey);
-    fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
-
-    const amount = document.getElementById("redeem-hongbao").getAttribute("data-amount");
-    await checkHongbaoBalance(hongbaoAccount.address, amount);
-
-    // Update the "Encrypted Key" field with the final decrypted key
-    document.getElementById("hongbao-key").value = finalDecryptedKey;
-
-    alert("Successfully decrypted, checked balance, and updated the key!");
-  } catch (error) {
-    console.error("Error during decryption or balance check:", error);
-    alert("Failed to decrypt or check balance. Please ensure the password and key are correct.");
   }
+
+  const createHongbaoButton = document.getElementById('create-hongbao');
+  if (createHongbaoButton) {
+    createHongbaoButton.addEventListener('click', async () => {
+      const amount = parseFloat(document.getElementById('hongbao-amount').value);
+      await sendHongbao(amount);
+    });
+  }
+
+  const createHongbaoWithPasskeyButton = document.getElementById('create-hongbao-with-passkey');
+  if (createHongbaoWithPasskeyButton) {
+    createHongbaoWithPasskeyButton.addEventListener('click', async () => {
+      const amount = parseFloat(document.getElementById('hongbao-amount').value);
+      if (!amount || amount <= 0) {
+        alert("Please enter a valid amount.");
+        return;
+      }
+      await fundHongbaoWithPasskey(amount);
+    });
+  }
+
+  // Event listeners for receiver section
+  const redeemHongbaoButton = document.getElementById('redeem-hongbao');
+  if (redeemHongbaoButton) {
+    redeemHongbaoButton.addEventListener('click', () => {
+      const encryptedKey = document.getElementById('hongbao-key').value;
+      const timestamp = parseInt(document.getElementById('hongbao-timestamp').value, 10);
+      const amount = document.getElementById('redeem-hongbao').getAttribute('data-amount');
+      redeemHongbaoAndSweep(encryptedKey, timestamp, amount);
+    });
+  }
+
+  const redeemNewWalletButton = document.getElementById('redeem-new-wallet');
+  if (redeemNewWalletButton) {
+    redeemNewWalletButton.addEventListener('click', () => {
+      const encryptedKey = document.getElementById('hongbao-key').value;
+      const timestamp = parseInt(document.getElementById('hongbao-timestamp').value, 10);
+      const amount = document.getElementById('redeem-hongbao').getAttribute('data-amount');
+      claimToNewWallet(encryptedKey, timestamp, amount);
+    });
+  }
+
+  const redeemExistingWalletButton = document.getElementById('redeem-existing-wallet');
+  if (redeemExistingWalletButton) {
+    redeemExistingWalletButton.addEventListener('click', () => {
+      const encryptedKey = document.getElementById('hongbao-key').value;
+      const timestamp = parseInt(document.getElementById('hongbao-timestamp').value, 10);
+      const amount = document.getElementById('redeem-hongbao').getAttribute('data-amount');
+      claimToExistingWallet(encryptedKey, timestamp, amount);
+    });
+  }
+
+  const decryptPasswordButton = document.getElementById('decrypt-password');
+  if (decryptPasswordButton) {
+    decryptPasswordButton.addEventListener('click', async () => {
+      const encryptedKey = document.getElementById('hongbao-key').value;
+      const password = document.getElementById('redeem-password').value;
+      const timestamp = parseInt(document.getElementById('hongbao-timestamp').value, 10);
+
+      if (!password) {
+        alert("Please enter a password.");
+        return;
+      }
+
+      try {
+        const encryptedObject = JSON.parse(encryptedKey);
+        const passwordDecryptedKey = await decryptWithPassword(
+          encryptedObject.encrypted,
+          password,
+          encryptedObject.iv
+        );
+
+        if (!passwordDecryptedKey) {
+          throw new Error("Failed to decrypt with the provided password.");
+        }
+
+        const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
+          encrypted_msg: passwordDecryptedKey,
+          timestamp,
+        });
+
+        const finalDecryptedKey = decryptResponse.data.message;
+        const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(finalDecryptedKey);
+        fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
+
+        const amount = document.getElementById("redeem-hongbao").getAttribute("data-amount");
+        await checkHongbaoBalance(hongbaoAccount.address, amount);
+
+        document.getElementById("hongbao-key").value = finalDecryptedKey;
+
+        alert("Successfully decrypted, checked balance, and updated the key!");
+      } catch (error) {
+        console.error("Error during decryption or balance check:", error);
+        alert("Failed to decrypt or check balance. Please ensure the password and key are correct.");
+      }
+    });
+  }
+
+  populateFieldsFromHash();
 });
-
-
-
-
-
-document.addEventListener('DOMContentLoaded', populateFieldsFromHash);
