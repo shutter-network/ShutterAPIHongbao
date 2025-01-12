@@ -562,6 +562,7 @@ async function populateFieldsFromHash() {
     document.getElementById("redeem-hongbao").setAttribute("data-amount", amount);
     hongbaoVisual.classList.remove("hidden");
 
+    // Start countdown
     startCountdown(parseInt(timestamp, 10));
 
     detailsElement.textContent = "Checking Hongbao status...";
@@ -587,6 +588,7 @@ async function populateFieldsFromHash() {
     senderSection.classList.remove("hidden");
   }
 }
+
 
 
 
