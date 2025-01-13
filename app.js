@@ -614,6 +614,26 @@ async function populateFieldsFromHash() {
   } else {
     senderSection.classList.remove("hidden");
   }
+
+  // Call the new function to handle password visibility
+  handlePasswordVisibility();
+}
+
+function handlePasswordVisibility() {
+  const hash = window.location.hash.substring(1);
+  const params = new URLSearchParams(hash.split("?")[1]);
+  const isProtected = params.get("protected") === "true";
+
+  const passwordField = document.getElementById("redeem-password");
+  const decryptButton = document.getElementById("decrypt-password");
+
+  if (isProtected) {
+    passwordField.classList.remove("hidden");
+    decryptButton.classList.remove("hidden");
+  } else {
+    passwordField.classList.add("hidden");
+    decryptButton.classList.add("hidden");
+  }
 }
 
 

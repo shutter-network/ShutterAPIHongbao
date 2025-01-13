@@ -195,3 +195,7 @@ body {
 .shutter-link:hover {
     color: #a52828; /* Darker red for hover effect */
 }
+.hidden {
+    display: none !important;
+  }
+  
