@@ -578,6 +578,8 @@ async function populateFieldsFromHash() {
   const receiverSection = document.getElementById("receiver-section");
   const hongbaoVisual = document.getElementById("hongbao-visual-redeem");
   const detailsElement = document.getElementById("redemption-details");
+  const claimNewWalletButton = document.getElementById("redeem-new-wallet");
+  const toggleOtherOptionsButton = document.getElementById("toggle-other-options");
 
   senderSection.classList.add("hidden");
   receiverSection.classList.add("hidden");
@@ -589,8 +591,16 @@ async function populateFieldsFromHash() {
     document.getElementById("redeem-hongbao").setAttribute("data-amount", amount);
     hongbaoVisual.classList.remove("hidden");
 
-    // Start countdown
-    startCountdown(parseInt(timestamp, 10));
+    const currentTime = Math.floor(Date.now() / 1000);
+    if (currentTime >= parseInt(timestamp, 10)) {
+      // Countdown is already 0 or passed; show the buttons
+      document.getElementById("countdown").textContent = "Hongbao is now available!";
+      if (claimNewWalletButton) claimNewWalletButton.classList.remove("hidden");
+      if (toggleOtherOptionsButton) toggleOtherOptionsButton.classList.remove("hidden");
+    } else {
+      // Countdown still active; start the timer
+      startCountdown(parseInt(timestamp, 10));
+    }
 
     detailsElement.textContent = "Checking Hongbao status...";
     detailsElement.classList.remove("hidden");
@@ -618,6 +628,7 @@ async function populateFieldsFromHash() {
   // Call the new function to handle password visibility
   handlePasswordVisibility();
 }
+
 
 function handlePasswordVisibility() {
   const hash = window.location.hash.substring(1);
