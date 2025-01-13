@@ -324,7 +324,7 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
     const hongbaoVisual = document.getElementById("hongbao-visual-redeem");
     const resultElement = document.getElementById("redeem-result");
 
-    detailsElement.textContent = "Checking for password protection...";
+    detailsElement.innerHTML = "Checking for password protection...<br>";
     detailsElement.classList.remove("hidden");
 
     let decryptedKey = encryptedKey;
@@ -361,6 +361,12 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
 
       decryptedKey = decryptResponse.data.message;
 
+      detailsElement.innerHTML += `
+        Shutter Keypers generated the decryption key.<br>
+        Decryption key: <strong>${decryptedKey}</strong><br>
+        Decryption successful!<br>
+      `;
+
       // Update the key field with the fully decrypted key for consistency
       document.getElementById("hongbao-key").value = decryptedKey;
     }
@@ -395,11 +401,18 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
       gasPrice: gasPrice.toString(),
     };
 
-    detailsElement.innerHTML += "Signing transaction and sending funds...<br>";
+    detailsElement.innerHTML += `
+      Amount gifted: <strong>${amount} XDAI</strong><br>
+      Signing transaction and sending funds...<br>
+      Pending transaction confirmation...<br>
+    `;
     const signedTx = await hongbaoAccount.signTransaction(tx);
     await fallbackWeb3.eth.sendSignedTransaction(signedTx.rawTransaction);
 
-    resultElement.textContent = `Funds swept to your wallet: ${receiverAccount}`;
+    resultElement.innerHTML = `
+      Funds swept to your wallet: <strong>${receiverAccount}</strong><br>
+      <a href="wallet.html" target="_blank">Manage Wallet</a>
+    `;
     resultElement.classList.remove("hidden");
     hongbaoVisual.classList.add("opened");
 
@@ -410,6 +423,7 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
     alert("Failed to redeem or sweep Hongbao.");
   }
 }
+
 
 
 
@@ -452,7 +466,7 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
     const hongbaoVisual = document.getElementById("hongbao-visual-redeem");
     const resultElement = document.getElementById("redeem-result");
 
-    detailsElement.textContent = "Checking for password protection...";
+    detailsElement.innerHTML = "Checking for password protection...<br>";
     detailsElement.classList.remove("hidden");
 
     let decryptedKey = encryptedKey;
@@ -489,6 +503,12 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
 
       decryptedKey = decryptResponse.data.message;
 
+      detailsElement.innerHTML += `
+        Shutter Keypers generated the decryption key.<br>
+        Decryption key: <strong>${decryptedKey}</strong><br>
+        Decryption successful!<br>
+      `;
+
       // Update the key field with the fully decrypted key for consistency
       document.getElementById("hongbao-key").value = decryptedKey;
     }
@@ -523,11 +543,18 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
       chainId: parseInt(GNOSIS_CHAIN_PARAMS.chainId, 16),
     };
 
-    detailsElement.innerHTML += "Signing transaction and sending funds...<br>";
+    detailsElement.innerHTML += `
+      Amount gifted: <strong>${amount} XDAI</strong><br>
+      Signing transaction and sending funds...<br>
+      Pending transaction confirmation...<br>
+    `;
     const signedTx = await hongbaoAccount.signTransaction(tx);
     await fallbackWeb3.eth.sendSignedTransaction(signedTx.rawTransaction);
 
-    resultElement.textContent = `Funds swept to your wallet: ${wallet.address}`;
+    resultElement.innerHTML = `
+      Funds swept to your wallet: <strong>${wallet.address}</strong><br>
+      <a href="wallet.html" target="_blank">Manage Wallet</a>
+    `;
     resultElement.classList.remove("hidden");
     hongbaoVisual.classList.add("opened");
 
@@ -588,7 +615,6 @@ async function populateFieldsFromHash() {
     senderSection.classList.remove("hidden");
   }
 }
-
 
 
 
