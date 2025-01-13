@@ -660,24 +660,40 @@ async function checkHongbaoBalance(hongbaoAccountAddress, expectedAmount) {
 
 // Countdown timer
 function startCountdown(timestamp) {
-  const countdownElement = document.getElementById('countdown');
+  const countdownElement = document.getElementById("countdown");
+  const claimNewWalletButton = document.getElementById("redeem-new-wallet");
+  const toggleOtherOptionsButton = document.getElementById("toggle-other-options");
+  const otherClaimOptionsDiv = document.getElementById("other-claim-options");
+
   const interval = setInterval(() => {
-    const now = Math.floor(Date.now() / 1000);
-    const secondsLeft = timestamp - now;
+      const now = Math.floor(Date.now() / 1000);
+      const secondsLeft = timestamp - now;
 
-    if (secondsLeft <= 0) {
-      countdownElement.textContent = 'Hongbao is now available!';
-      clearInterval(interval);
-      return;
-    }
+      if (secondsLeft <= 0) {
+          clearInterval(interval);
 
-    const hours = Math.floor(secondsLeft / 3600);
-    const minutes = Math.floor((secondsLeft % 3600) / 60);
-    const seconds = secondsLeft % 60;
+          // Update the countdown text
+          countdownElement.textContent = "Hongbao is now available!";
 
-    countdownElement.textContent = `${hours}h ${minutes}m ${seconds}s remaining.`;
+          // Show claim buttons
+          if (claimNewWalletButton) claimNewWalletButton.classList.remove("hidden");
+          if (toggleOtherOptionsButton) toggleOtherOptionsButton.classList.remove("hidden");
+          return;
+      }
+
+      // Hide claim buttons while the countdown is active
+      if (claimNewWalletButton) claimNewWalletButton.classList.add("hidden");
+      if (toggleOtherOptionsButton) toggleOtherOptionsButton.classList.add("hidden");
+      if (otherClaimOptionsDiv) otherClaimOptionsDiv.classList.add("hidden");
+
+      const hours = Math.floor(secondsLeft / 3600);
+      const minutes = Math.floor((secondsLeft % 3600) / 60);
+      const seconds = secondsLeft % 60;
+
+      countdownElement.textContent = `${hours}h ${minutes}m ${seconds}s remaining.`;
   }, 1000);
 }
+
 document.addEventListener('DOMContentLoaded', () => {
   // Event listeners for sender section
   const createOwnHongbaoButton = document.getElementById('create-own-hongbao');
@@ -740,6 +756,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+
+
+  
   // Toggle Other Claiming Options
   const toggleOtherOptionsButton = document.getElementById("toggle-other-options");
   const otherClaimOptions = document.getElementById("other-claim-options");
