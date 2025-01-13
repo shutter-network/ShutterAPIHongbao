@@ -636,7 +636,6 @@ function handlePasswordVisibility() {
 
 
 
-
 async function checkHongbaoBalance(hongbaoAccountAddress, expectedAmount) {
   const detailsElement = document.getElementById("redemption-details");
 
