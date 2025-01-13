@@ -665,34 +665,36 @@ function startCountdown(timestamp) {
   const toggleOtherOptionsButton = document.getElementById("toggle-other-options");
   const otherClaimOptionsDiv = document.getElementById("other-claim-options");
 
+  // Initially hide claim buttons
+  if (claimNewWalletButton) claimNewWalletButton.classList.add("hidden");
+  if (toggleOtherOptionsButton) toggleOtherOptionsButton.classList.add("hidden");
+  if (otherClaimOptionsDiv) otherClaimOptionsDiv.classList.add("hidden");
+
   const interval = setInterval(() => {
-      const now = Math.floor(Date.now() / 1000);
-      const secondsLeft = timestamp - now;
+    const now = Math.floor(Date.now() / 1000);
+    const secondsLeft = timestamp - now;
 
-      if (secondsLeft <= 0) {
-          clearInterval(interval);
+    if (secondsLeft <= 0) {
+      clearInterval(interval);
 
-          // Update the countdown text
-          countdownElement.textContent = "Hongbao is now available!";
+      // Update the countdown text
+      countdownElement.textContent = "Hongbao is now available!";
 
-          // Show claim buttons
-          if (claimNewWalletButton) claimNewWalletButton.classList.remove("hidden");
-          if (toggleOtherOptionsButton) toggleOtherOptionsButton.classList.remove("hidden");
-          return;
-      }
+      // Show claim buttons
+      if (claimNewWalletButton) claimNewWalletButton.classList.remove("hidden");
+      if (toggleOtherOptionsButton) toggleOtherOptionsButton.classList.remove("hidden");
+      return;
+    }
 
-      // Hide claim buttons while the countdown is active
-      if (claimNewWalletButton) claimNewWalletButton.classList.add("hidden");
-      if (toggleOtherOptionsButton) toggleOtherOptionsButton.classList.add("hidden");
-      if (otherClaimOptionsDiv) otherClaimOptionsDiv.classList.add("hidden");
+    // Calculate time remaining
+    const hours = Math.floor(secondsLeft / 3600);
+    const minutes = Math.floor((secondsLeft % 3600) / 60);
+    const seconds = secondsLeft % 60;
 
-      const hours = Math.floor(secondsLeft / 3600);
-      const minutes = Math.floor((secondsLeft % 3600) / 60);
-      const seconds = secondsLeft % 60;
-
-      countdownElement.textContent = `${hours}h ${minutes}m ${seconds}s remaining.`;
+    countdownElement.textContent = `${hours}h ${minutes}m ${seconds}s remaining.`;
   }, 1000);
 }
+
 
 document.addEventListener('DOMContentLoaded', () => {
   // Event listeners for sender section
@@ -758,7 +760,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-  
+
   // Toggle Other Claiming Options
   const toggleOtherOptionsButton = document.getElementById("toggle-other-options");
   const otherClaimOptions = document.getElementById("other-claim-options");
