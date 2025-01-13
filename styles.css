@@ -210,11 +210,14 @@ body {
     color: #888;
     border-color: #ccc;
   }
-  
-  /* Smaller Button */
-  .button.small {
-    font-size: 1rem;
-    padding: 10px 20px;
+
+/* Smaller Button */
+.button.small {
+    font-size: 0.9rem;
+    padding: 8px 15px;
     margin-top: 10px;
+    display: block; /* Ensure it appears below other buttons */
+    width: fit-content;
+    margin: 10px auto; /* Center align */
   }
   
