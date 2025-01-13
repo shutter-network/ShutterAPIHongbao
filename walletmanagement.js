@@ -121,7 +121,23 @@ async function updateWalletBalance(wallet) {
 }
 
 // Add event listeners if elements exist
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    try {
+        // Automatically load the wallet on page load
+        const wallet = await authenticateWallet();
+        if (walletOutput) {
+            walletOutput.value = `Wallet loaded successfully!\nAddress: ${wallet.address}`;
+        }
+        console.log("Wallet Address:", wallet.address);
+        updateWalletBalance(wallet);
+    } catch (error) {
+        console.error("Error loading wallet on page load:", error);
+        if (walletOutput) {
+            walletOutput.value = "Failed to load wallet automatically. Please try loading it manually.";
+        }
+    }
+
+    // Add event listener for Create Wallet button
     if (createWalletButton) {
         createWalletButton.addEventListener("click", async () => {
             try {
@@ -138,6 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Add event listener for Load Wallet button
     if (loadWalletButton) {
         loadWalletButton.addEventListener("click", async () => {
             try {
@@ -154,6 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Add event listener for Send Funds button
     if (sendFundsButton) {
         sendFundsButton.addEventListener("click", async () => {
             const recipient = recipientInput?.value.trim();
