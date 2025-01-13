@@ -198,4 +198,23 @@ body {
 .hidden {
     display: none !important;
   }
+
+/* Smaller and Grey Styling */
+.secondary-label {
+    font-size: 0.9rem;
+    color: #888; /* Lighter grey */
+  }
+  
+  .secondary-input {
+    font-size: 0.9rem;
+    color: #888;
+    border-color: #ccc;
+  }
+  
+  /* Smaller Button */
+  .button.small {
+    font-size: 1rem;
+    padding: 10px 20px;
+    margin-top: 10px;
+  }
   

@@ -740,6 +740,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Toggle Other Claiming Options
+  const toggleOtherOptionsButton = document.getElementById("toggle-other-options");
+  const otherClaimOptions = document.getElementById("other-claim-options");
+
+  toggleOtherOptionsButton.addEventListener("click", () => {
+    if (otherClaimOptions.classList.contains("hidden")) {
+      otherClaimOptions.classList.remove("hidden");
+      toggleOtherOptionsButton.textContent = "Hide Claiming Options";
+    } else {
+      otherClaimOptions.classList.add("hidden");
+      toggleOtherOptionsButton.textContent = "Other Claiming Options";
+    }
+  });
+
+
+
   const decryptPasswordButton = document.getElementById('decrypt-password');
   if (decryptPasswordButton) {
     decryptPasswordButton.addEventListener('click', async () => {

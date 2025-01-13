@@ -43,11 +43,12 @@
       </p>
 
       <div class="hongbao-envelope">
-        <label for="hongbao-key">🔑 Encrypted Key:</label>
-        <input type="text" id="hongbao-key" class="input" placeholder="Paste encrypted key from link">
+        <label for="hongbao-key" class="secondary-label">🔑 Encrypted Key:</label>
+        <input type="text" id="hongbao-key" class="input secondary-input" placeholder="Paste encrypted key from link">
         
-        <label for="hongbao-timestamp">⏰ Timestamp:</label>
-        <input type="text" id="hongbao-timestamp" class="input" placeholder="Paste timestamp from link">
+        <label for="hongbao-timestamp" class="secondary-label">⏰ Timestamp:</label>
+        <input type="text" id="hongbao-timestamp" class="input secondary-input" placeholder="Paste timestamp from link">
+        
         
         <div id="password-container" class="hidden">
           <label for="redeem-password">🔑 Password (if protected):</label>
@@ -63,8 +64,11 @@
 
         <div id="redemption-options">
           <button id="redeem-new-wallet" class="button">Claim to a New Wallet</button>
-          <button id="redeem-existing-wallet" class="button">Claim to an Existing Wallet</button>
-          <button id="redeem-hongbao" class="button">Redeem to MetaMask</button>
+          <button id="toggle-other-options" class="button small">Other Claiming Options</button>
+          <div id="other-claim-options" class="hidden">
+            <button id="redeem-existing-wallet" class="button">Claim to an Existing Wallet</button>
+            <button id="redeem-hongbao" class="button">Redeem to MetaMask</button>
+          </div>
         </div>
         
         <p id="redemption-details" class="details hidden"></p>
