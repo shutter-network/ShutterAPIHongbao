@@ -727,14 +727,20 @@ document.addEventListener('DOMContentLoaded', () => {
   if (decryptPasswordButton) {
     decryptPasswordButton.addEventListener('click', async () => {
       const encryptedKey = document.getElementById('hongbao-key').value;
-      const password = document.getElementById('redeem-password').value;
+      const password = document.getElementById('redeem-password').value.trim();
       const timestamp = parseInt(document.getElementById('hongbao-timestamp').value, 10);
-
+  
       if (!password) {
         alert("Please enter a password.");
         return;
       }
-
+  
+      const currentTime = Math.floor(Date.now() / 1000);
+      if (currentTime < timestamp) {
+        alert(`The Hongbao is locked until ${new Date(timestamp * 1000).toLocaleString()}. Please wait until the unlock time.`);
+        return;
+      }
+  
       try {
         const encryptedObject = JSON.parse(encryptedKey);
         const passwordDecryptedKey = await decryptWithPassword(
@@ -742,32 +748,40 @@ document.addEventListener('DOMContentLoaded', () => {
           password,
           encryptedObject.iv
         );
-
+  
         if (!passwordDecryptedKey) {
-          throw new Error("Failed to decrypt with the provided password.");
+          throw new Error("Decryption with the provided password failed.");
         }
-
+  
+        // Decrypt with Shutter
         const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
           encrypted_msg: passwordDecryptedKey,
           timestamp,
         });
-
+  
         const finalDecryptedKey = decryptResponse.data.message;
         const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(finalDecryptedKey);
         fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
-
+  
         const amount = document.getElementById("redeem-hongbao").getAttribute("data-amount");
         await checkHongbaoBalance(hongbaoAccount.address, amount);
-
+  
+        // Update the "Encrypted Key" field with the decrypted private key
         document.getElementById("hongbao-key").value = finalDecryptedKey;
-
+  
         alert("Successfully decrypted, checked balance, and updated the key!");
       } catch (error) {
         console.error("Error during decryption or balance check:", error);
-        alert("Failed to decrypt or check balance. Please ensure the password and key are correct.");
+  
+        if (error.response && error.response.status === 403) {
+          alert("The decryption key is not yet available. Please try again after the unlock time.");
+        } else {
+          alert("Failed to decrypt or check balance. Ensure the password and key are correct.");
+        }
       }
     });
   }
+  
 
   populateFieldsFromHash();
 });
