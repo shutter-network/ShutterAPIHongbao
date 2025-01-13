@@ -624,17 +624,15 @@ function handlePasswordVisibility() {
   const params = new URLSearchParams(hash.split("?")[1]);
   const isProtected = params.get("protected") === "true";
 
-  const passwordField = document.getElementById("redeem-password");
-  const decryptButton = document.getElementById("decrypt-password");
+  const passwordContainer = document.getElementById("password-container");
 
   if (isProtected) {
-    passwordField.classList.remove("hidden");
-    decryptButton.classList.remove("hidden");
+    passwordContainer.classList.remove("hidden");
   } else {
-    passwordField.classList.add("hidden");
-    decryptButton.classList.add("hidden");
+    passwordContainer.classList.add("hidden");
   }
 }
+
 
 
 

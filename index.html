@@ -49,8 +49,11 @@
         <label for="hongbao-timestamp">⏰ Timestamp:</label>
         <input type="text" id="hongbao-timestamp" class="input" placeholder="Paste timestamp from link">
         
-        <label for="redeem-password">🔑 Password (if protected):</label>
-        <input type="password" id="redeem-password" class="input" placeholder="Enter the password">
+        <div id="password-container" class="hidden">
+          <label for="redeem-password">🔑 Password (if protected):</label>
+          <input type="password" id="redeem-password" class="input" placeholder="Enter the password">
+        </div>
+        
         
         <h3>Countdown to Unlock:</h3>
         <p id="countdown" class="countdown"></p>
