@@ -694,7 +694,12 @@ function isWeChatBrowser() {
   return ua.includes("micromessenger");
 }
 
-
+function copyLink() {
+  const url = window.location.href;
+  navigator.clipboard.writeText(url).then(() => {
+    alert("Link copied! Open it in Chrome or Safari.");
+  });
+}
 
 // Countdown timer
 function startCountdown(timestamp) {
