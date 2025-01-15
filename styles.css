@@ -220,4 +220,15 @@ body {
     width: fit-content;
     margin: 10px auto; /* Center align */
   }
-  
+
+  select.input {
+    width: 93.4%;
+    margin: 10px auto;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1.2rem;
+    background-color: white;
+
+}
+
