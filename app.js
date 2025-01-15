@@ -157,10 +157,33 @@ async function decryptWithPassword(encryptedData, password, iv) {
 }
 
 
+function calculateReleaseTimestamp() {
+  const unlockTimeSelect = document.getElementById("unlock-time");
+  const selectedOption = unlockTimeSelect.value;
+  
+  if (selectedOption === "custom") {
+      const customTimestampInput = document.getElementById("custom-timestamp").value;
+      if (!customTimestampInput) {
+          alert("Please select a valid custom timestamp.");
+          throw new Error("Invalid custom timestamp.");
+      }
+      return Math.floor(new Date(customTimestampInput).getTime() / 1000);
+  }
+
+  if (selectedOption === "lunar-new-year") {
+      // Lunar New Year timestamp for 2025 in UTC
+      return Math.floor(new Date("2025-01-29T12:36:00Z").getTime() / 1000);
+  }
+
+  // Predefined time options in seconds
+  return Math.floor(Date.now() / 1000) + parseInt(selectedOption, 10);
+}
+
+
 async function sendHongbao(amount) {
   try {
     const senderAccount = await connectMetaMask();
-    const releaseTimestamp = Math.floor(Date.now() / 1000) + 300; // Lock for 10 minutes
+    const releaseTimestamp = calculateReleaseTimestamp();
 
     const newAccount = web3.eth.accounts.create();
     const privateKey = newAccount.privateKey;
@@ -226,7 +249,7 @@ async function fundHongbaoWithPasskey(amount) {
     const provider = new ethers.JsonRpcProvider(GNOSIS_CHAIN_PARAMS.rpcUrls[0]);
     const walletWithProvider = wallet.connect(provider);
 
-    const releaseTimestamp = Math.floor(Date.now() / 1000) + 300; // Lock for 10 minutes
+    const releaseTimestamp = calculateReleaseTimestamp();
 
     const newAccount = ethers.Wallet.createRandom();
     const privateKey = newAccount.privateKey;

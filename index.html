@@ -19,6 +19,21 @@
         <label for="hongbao-amount">💰 Amount (XDAI):</label>
         <input type="number" id="hongbao-amount" class="input" step="0.01" placeholder="Enter amount">
         
+              <label for="unlock-time">⏰ Select Unlock Time:</label>
+      <select id="unlock-time" class="input">
+        <option value="60">1 minute from now</option>
+        <option value="300">5 minutes from now</option>
+        <option value="1800">30 minutes from now</option>
+        <option value="lunar-new-year">Lunar New Year (Jan 29, 2025, 12:36 UTC)</option>
+        <option value="custom">Custom</option>
+      </select>
+
+      <div id="custom-timestamp-container" class="hidden">
+        <label for="custom-timestamp">Enter Custom Date/Time:</label>
+        <input type="datetime-local" id="custom-timestamp" class="input">
+      </div>
+
+
         <label for="hongbao-password">🔒 Password (optional):</label>
         <input type="password" id="hongbao-password" class="input" placeholder="Enter a password to protect the Hongbao">
         
