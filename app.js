@@ -873,3 +873,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   populateFieldsFromHash();
 });
+document.getElementById("unlock-time").addEventListener("change", (event) => {
+  const customTimestampContainer = document.getElementById("custom-timestamp-container");
+  customTimestampContainer.classList.toggle("hidden", event.target.value !== "custom");
+});
