@@ -739,7 +739,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.innerHTML = `
       <div style="text-align: center; padding: 20px;">
         <h2>Unsupported Browser</h2>
-        <p>This page works best in a real browser like Chrome or Safari. Please press the 3 dots in the upper right and open it in your browser.</p>
+        <p>Someone has gifted you a shutterized, threshold encrypted Hongbao! But this page works best in a real browser like Chrome or Safari. Please press the 3 dots in the upper right and open it in your browser.</p>
       </div>
     `;
   }
