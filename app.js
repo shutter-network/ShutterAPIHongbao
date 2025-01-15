@@ -694,13 +694,6 @@ function isWeChatBrowser() {
   return ua.includes("micromessenger");
 }
 
-function copyLink() {
-  const url = window.location.href;
-  navigator.clipboard.writeText(url).then(() => {
-    alert("Link copied! Open it in Chrome or Safari.");
-  });
-}
-
 // Countdown timer
 function startCountdown(timestamp) {
   const countdownElement = document.getElementById("countdown");
@@ -746,8 +739,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.innerHTML = `
       <div style="text-align: center; padding: 20px;">
         <h2>Unsupported Browser</h2>
-        <p>This page works best in a real browser like Chrome or Safari. Please copy the link and open it in your browser.</p>
-        <button onclick="copyLink()" style="padding: 10px 20px; background-color: #007BFF; color: white; border: none; border-radius: 5px; cursor: pointer;">Copy Link</button>
+        <p>This page works best in a real browser like Chrome or Safari. Please press the 3 dots in the upper right and open it in your browser.</p>
       </div>
     `;
   }
