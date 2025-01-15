@@ -738,8 +738,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (isWeChatBrowser()) {
     document.body.innerHTML = `
       <div style="text-align: center; padding: 20px;">
-        <h2>Unsupported Browser</h2>
-        <p>Someone has gifted you a shutterized, threshold encrypted Hongbao! But this page works best in a real browser like Chrome or Safari. Please press the 3 dots in the upper right and open it in your browser.</p>
+        <h2>Shutterized Hongbao - Unsupported Browser</h2>
+        <p>Please press the 3 dots in the upper right and open it in your browser. Someone has gifted you a shutterized, threshold encrypted Hongbao! But this page works best in a real browser like Chrome or Safari.</p>
       </div>
     `;
   }
