@@ -689,6 +689,10 @@ async function checkHongbaoBalance(hongbaoAccountAddress, expectedAmount) {
   }
 }
 
+function isWeChatBrowser() {
+  const ua = navigator.userAgent.toLowerCase();
+  return ua.includes("micromessenger");
+}
 
 
 
@@ -732,6 +736,18 @@ function startCountdown(timestamp) {
 
 document.addEventListener('DOMContentLoaded', () => {
   // Event listeners for sender section
+
+  if (isWeChatBrowser()) {
+    document.body.innerHTML = `
+      <div style="text-align: center; padding: 20px;">
+        <h2>Unsupported Browser</h2>
+        <p>This page works best in a real browser like Chrome or Safari. Please copy the link and open it in your browser.</p>
+        <button onclick="copyLink()" style="padding: 10px 20px; background-color: #007BFF; color: white; border: none; border-radius: 5px; cursor: pointer;">Copy Link</button>
+      </div>
+    `;
+  }
+
+
   const createOwnHongbaoButton = document.getElementById('create-own-hongbao');
   if (createOwnHongbaoButton) {
     createOwnHongbaoButton.addEventListener('click', () => {
