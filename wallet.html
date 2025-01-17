@@ -117,6 +117,17 @@
         .hongbao-visual.opened::before {
             transform: rotateX(-120deg);
         }
+        .disclaimer-box {
+    border: 2px dashed #d32f2f;
+    background-color: #ffecec;
+    color: #d32f2f;
+    padding: 10px;
+    margin-top: 20px;
+    font-size: 0.9rem;
+    text-align: left;
+    border-radius: 6px;
+}
+
     </style>
 </head>
 <body>
@@ -129,8 +140,17 @@
         </div>
         <textarea id="walletOutput" rows="4" placeholder="Your wallet details will appear here" readonly></textarea>
         <div class="balance" id="walletBalance">Balance: Loading...</div>
+        <div class="disclaimer-box">
+            <strong>Disclaimer:</strong>
+            <ul>
+                <li>This is alpha stage, unaudited software. Use it at your own risk.</li>
+                <li>This wallet is non-custodial, and all keys are stored locally in your browser or exported. If you lose your keys, funds cannot be recovered.</li>
+                <li>The private key may appear in export or share links, so handle with care.</li>
+                <li>This app is fully open source and free; whoever hosts it cannot be held liable.</li>
+            </ul>
+        </div>
     </div>
-
+    
     <div class="container">
         <h2>Send Funds</h2>
         <input type="text" id="recipient" placeholder="Recipient Address">
