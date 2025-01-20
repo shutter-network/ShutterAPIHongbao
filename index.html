@@ -3,20 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎁 Shutterized Hongbao DApp</title>
+  <title>🎁 Shutterized Hongbao DApp - 红包应用</title>
   <script src="https://cdn.jsdelivr.net/npm/web3/dist/web3.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="container">
-    <h1 class="title">🎁 Shutterized Hongbao Gifting DApp</h1>
+    <h1 class="title">🎁 Shutterized Hongbao Gifting DApp - 红包赠送应用</h1>
 
     <!-- Sender Section -->
     <div id="sender-section" class="section hidden">
       <h2>Gong Xi Fa Cai! 恭喜发财 🎉</h2>
 
       <p>Send a time-locked Hangbao to fellow crypto and not-yet crypto friends and admirers. Secure, private, and unlocked whenever you want.</p>
+      <p>发送一个时间锁定的红包给你的加密朋友或尚未接触加密的朋友和仰慕者。安全、私密，可随时解锁。</p>
+
       <div class="disclaimer-box">
         <strong>Disclaimer:</strong>
         <ul>
@@ -48,8 +50,10 @@
         <label for="hongbao-password">🔒 Password (optional):</label>
         <input type="password" id="hongbao-password" class="input" placeholder="Enter a password to protect the Hongbao">
         
-        <button id="create-hongbao" class="button">Create Hongbao with MetaMask</button>
-        <button id="create-hongbao-with-passkey" class="button">Fund Hongbao with Passkey Wallet</button>
+        <button id="create-hongbao" class="button">Create Hongbao with MetaMask / 使用 MetaMask 创建红包</button>
+
+        <button id="create-hongbao-with-passkey" class="button">Fund Hongbao with Passkey Wallet / 使用 Passkey 钱包充值红包</button>
+
         
         <p>Note, the receiver doesn't need any funds, nor a wallet to claim</p>
         <p id="hongbao-details" class="details hidden"></p>
@@ -68,6 +72,14 @@
           Curious how it works? Learn more about Shutter’s threshold encryption here!
         </a>
       </p>
+      <p class="details">
+        有人送了你一个包含 xDAI 的红包，基于 Gnosis Chain！这个红包锁定至春节（或发送者选择的其他时间）！红包使用 Shutter 加密技术加密，确保在正确的时间解锁，靠的是加密和解密的魔法！
+        <br>
+        <a href="https://www.shutter.network/" target="_blank" rel="noopener noreferrer" class="shutter-link">
+            好奇它是如何工作的？了解更多关于 Shutter 的阈值加密！
+        </a>
+    </p>
+    
       <div class="disclaimer-box">
         <strong>Disclaimer:</strong>
         <ul>
@@ -98,7 +110,8 @@
         
 
         <div id="redemption-options">
-          <button id="redeem-new-wallet" class="button hidden">Claim to a New Wallet</button>
+          <button id="redeem-new-wallet" class="button hidden">Claim to New Wallet / 领取到新钱包</button>
+
           <button id="toggle-other-options" class="button small hidden">Other Claiming Options</button>
           <div id="other-claim-options" class="hidden">
             <button id="redeem-existing-wallet" class="button">Claim to an Existing Wallet</button>
@@ -113,7 +126,8 @@
       </div>
       
       <div id="create-own-section">
-        <button id="create-own-hongbao" class="button">Create Your Own Hongbao</button>
+        <button id="create-own-hongbao" class="button">Create Your Own Hongbao / 创建自己的红包</button>
+
       </div>
     </div>
   </div>
