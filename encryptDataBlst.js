@@ -1,5 +1,6 @@
 import { hexToBytes, keccak256, bytesToBigInt, bytesToHex, numberToBytes } from 'https://esm.sh/viem';
 import pkg from 'https://esm.sh/lodash';
+import { Buffer } from 'https://esm.sh/buffer';
 const { zip } = pkg;
 const blsSubgroupOrderBytes = [
     0x73, 0xed, 0xa7, 0x53, 0x29, 0x9d, 0x7d, 0x48, 0x33, 0x39, 0xd8, 0x08, 0x09, 0xa1, 0xd8, 0x05,
