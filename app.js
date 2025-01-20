@@ -278,7 +278,7 @@ async function fundHongbaoWithPasskey(amount) {
 
     // 1) Register identity with Shutter for time-based release
     const identityPrefixHex = "0x" + crypto
-      .getRandomValues(new Uint8Array(16))
+      .getRandomValues(new Uint8Array(32))
       .reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), "");
     const registrationData = await registerShutterIdentity(releaseTimestamp, identityPrefixHex);
 
