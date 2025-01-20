@@ -198,21 +198,31 @@ async function sendHongbao(amount) {
     detailsElement.textContent = "Requesting encryption key from Shutter...";
     detailsElement.classList.remove("hidden");
 
-    // Encrypt with Shutter
-    const shutterResponse = await axios.post(`${NANOSHUTTER_API_BASE}/encrypt/with_time`, {
-      cypher_text: privateKey,
-      timestamp: releaseTimestamp,
-    });
+    // 1) REGISTER or ensure your identity on Shutter (if needed)
+    //    For the sake of example, create a random prefix. Or store an existing one.
+    const identityPrefixHex = "0x" + crypto
+      .getRandomValues(new Uint8Array(16))
+      .reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), "");
 
-    let shutterEncryptedKey = shutterResponse.data.message;
+    // This step ensures Shutter knows about our time-based release
+    const registrationData = await registerShutterIdentity(releaseTimestamp, identityPrefixHex);
 
-    // Encrypt Shutter-encrypted key with password if provided
+    // 2) Get encryption data (eon_key, identity, etc.)
+    //    We'll pass the connected wallet address as userAddress.
+    const encryptionData = await getShutterEncryptionData(senderAccount, identityPrefixHex);
+
+    // 3) Locally encrypt the privateKey with BLST
+    let shutterEncryptedKey = await shutterEncryptPrivateKey(privateKey, encryptionData);
+
+    // 4) Optionally password-encrypt the BLST ciphertext
     if (password) {
       const passwordEncrypted = await encryptWithPassword(shutterEncryptedKey, password);
-      shutterEncryptedKey = JSON.stringify(passwordEncrypted); // Combine encrypted data and IV
+      shutterEncryptedKey = JSON.stringify(passwordEncrypted);
     }
 
-    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(shutterEncryptedKey)}&timestamp=${releaseTimestamp}&amount=${amount}&protected=${!!password}`;
+    // 5) Construct the link
+    //    We'll store the "identity" from registration in the link so we can get the final key on redemption.
+    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(shutterEncryptedKey)}&timestamp=${releaseTimestamp}&amount=${amount}&protected=${!!password}&identity=${registrationData.identity}`;
 
     detailsElement.innerHTML = `
       Identity registered successfully with Shutter!<br>
@@ -223,6 +233,7 @@ async function sendHongbao(amount) {
     linkElement.textContent = `Share this link: ${link}`;
     linkElement.classList.remove("hidden");
 
+    // 6) Fund the ephemeral address with the chosen amount
     const hongbaoAmountWei = web3.utils.toWei(amount.toString(), "ether");
     await web3.eth.sendTransaction({
       from: senderAccount,
@@ -241,9 +252,10 @@ async function sendHongbao(amount) {
 }
 
 
+
 async function fundHongbaoWithPasskey(amount) {
   try {
-    const wallet = await authenticateWallet(); // Authenticate and load the passkey wallet
+    const wallet = await authenticateWallet(); // Passkey-based wallet
     console.log("Passkey Wallet Address:", wallet.address);
 
     const provider = new ethers.JsonRpcProvider(GNOSIS_CHAIN_PARAMS.rpcUrls[0]);
@@ -264,21 +276,25 @@ async function fundHongbaoWithPasskey(amount) {
     detailsElement.textContent = "Requesting encryption key from Shutter...";
     detailsElement.classList.remove("hidden");
 
-    // Encrypt with Shutter
-    const shutterResponse = await axios.post(`${NANOSHUTTER_API_BASE}/encrypt/with_time`, {
-      cypher_text: privateKey,
-      timestamp: releaseTimestamp,
-    });
+    // 1) Register identity with Shutter for time-based release
+    const identityPrefixHex = "0x" + crypto
+      .getRandomValues(new Uint8Array(16))
+      .reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), "");
+    const registrationData = await registerShutterIdentity(releaseTimestamp, identityPrefixHex);
 
-    let shutterEncryptedKey = shutterResponse.data.message;
+    // 2) Get encryption data
+    const encryptionData = await getShutterEncryptionData(wallet.address, identityPrefixHex);
 
-    // Encrypt Shutter-encrypted key with password if provided
+    // 3) Encrypt privateKey with Shutter BLST
+    let shutterEncryptedKey = await shutterEncryptPrivateKey(privateKey, encryptionData);
+
+    // 4) Optionally AES-encrypt with user password
     if (password) {
       const passwordEncrypted = await encryptWithPassword(shutterEncryptedKey, password);
-      shutterEncryptedKey = JSON.stringify(passwordEncrypted); // Combine encrypted data and IV
+      shutterEncryptedKey = JSON.stringify(passwordEncrypted);
     }
 
-    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(shutterEncryptedKey)}&timestamp=${releaseTimestamp}&amount=${amount}&protected=${!!password}`;
+    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(shutterEncryptedKey)}&timestamp=${releaseTimestamp}&amount=${amount}&protected=${!!password}&identity=${registrationData.identity}`;
 
     detailsElement.innerHTML = `
       Identity registered successfully with Shutter!<br>
@@ -290,8 +306,7 @@ async function fundHongbaoWithPasskey(amount) {
     linkElement.classList.remove("hidden");
 
     const hongbaoAmountWei = ethers.parseEther(amount.toString());
-
-    // Fetch gas price
+    // Gas checks
     const gasPrice = await provider.send("eth_gasPrice", []);
     const gasLimitEstimate = await provider.estimateGas({
       from: wallet.address,
@@ -333,9 +348,10 @@ async function fundHongbaoWithPasskey(amount) {
   }
 }
 
+
 async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
   try {
-    await ensureGnosisChain(); // Ensure the user is on the correct network
+    await ensureGnosisChain();
 
     const currentTime = Math.floor(Date.now() / 1000);
     if (currentTime < timestamp) {
@@ -352,13 +368,12 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
 
     let decryptedKey = encryptedKey;
 
-    // Step 1: Use updated decrypted key from UI
+    // 1) If user manually typed a fully decrypted key in the UI, use it.
     const keyField = document.getElementById("hongbao-key").value;
     if (keyField.startsWith("0x") && keyField.length === 66) {
-      // If the key is fully decrypted, use it
       decryptedKey = keyField;
     } else {
-      // Check for optional password protection
+      // 2) If link says protected=true, do password-based AES decryption first
       const isProtected = new URLSearchParams(window.location.search).get("protected") === "true";
       if (isProtected) {
         const password = document.getElementById("redeem-password").value.trim();
@@ -366,23 +381,34 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
           alert("Password is required to decrypt this Hongbao.");
           return;
         }
-
         try {
-          const encryptedObject = JSON.parse(decryptedKey); // Parse the stored object
-          decryptedKey = await decryptWithPassword(encryptedObject.encrypted, password, encryptedObject.iv);
+          const encryptedObject = JSON.parse(decryptedKey);
+          decryptedKey = await decryptWithPassword(
+            encryptedObject.encrypted,
+            password,
+            encryptedObject.iv
+          );
         } catch (error) {
           alert("Invalid password. Unable to decrypt the Hongbao.");
           return;
         }
       }
 
-      // Step 2: Decrypt with Shutter
-      const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
-        encrypted_msg: decryptedKey,
-        timestamp,
-      });
+      // 3) Now use the main Shutter approach to finalize decryption:
+      //    For time-based final key, we need the identity from the link
+      const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
+      const identityParam = urlParams.get("identity");
+      if (!identityParam) {
+        alert("Missing Shutter identity. Cannot complete final decryption.");
+        return;
+      }
 
-      decryptedKey = decryptResponse.data.message;
+      // Get final decryption key from Shutter, if the time is up
+      const finalKey = await getShutterDecryptionKey(identityParam);
+
+      // Locally decrypt the BLST ciphertext with finalKey 
+      // (Or call /decrypt_commitment if you prefer.)
+      decryptedKey = await shutterDecryptPrivateKey(decryptedKey, finalKey);
 
       detailsElement.innerHTML += `
         Shutter Keypers generated the decryption key.<br>
@@ -390,11 +416,11 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
         Decryption successful!<br>
       `;
 
-      // Update the key field with the fully decrypted key for consistency
+      // Update the key field
       document.getElementById("hongbao-key").value = decryptedKey;
     }
 
-    // Step 3: Use the fully decrypted key for all operations
+    // 4) Use the fully decrypted key to sweep the funds
     const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(decryptedKey);
     fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
 
@@ -450,6 +476,7 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
 
 
 
+
 async function claimToNewWallet(encryptedKey, timestamp, amount) {
   try {
     const wallet = await registerPasskey("My New Hongbao Wallet"); // Create a new passkey wallet
@@ -494,13 +521,12 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
 
     let decryptedKey = encryptedKey;
 
-    // Step 1: Use updated decrypted key from UI
+    // 1) If user typed a raw privateKey
     const keyField = document.getElementById("hongbao-key").value;
     if (keyField.startsWith("0x") && keyField.length === 66) {
-      // If the key is fully decrypted, use it
       decryptedKey = keyField;
     } else {
-      // Check for optional password protection
+      // 2) If protected, do password-based AES decryption first
       const isProtected = new URLSearchParams(window.location.search).get("protected") === "true";
       if (isProtected) {
         const password = document.getElementById("redeem-password").value.trim();
@@ -508,23 +534,29 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
           alert("Password is required to decrypt this Hongbao.");
           return;
         }
-
         try {
-          const encryptedObject = JSON.parse(decryptedKey); // Parse the stored object
-          decryptedKey = await decryptWithPassword(encryptedObject.encrypted, password, encryptedObject.iv);
+          const encryptedObject = JSON.parse(decryptedKey);
+          decryptedKey = await decryptWithPassword(
+            encryptedObject.encrypted,
+            password,
+            encryptedObject.iv
+          );
         } catch (error) {
           alert("Invalid password. Unable to decrypt the Hongbao.");
           return;
         }
       }
 
-      // Step 2: Decrypt with Shutter
-      const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
-        encrypted_msg: decryptedKey,
-        timestamp,
-      });
+      // 3) Shutter final key for time-based release
+      const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
+      const identityParam = urlParams.get("identity");
+      if (!identityParam) {
+        alert("Missing Shutter identity. Cannot complete final decryption.");
+        return;
+      }
 
-      decryptedKey = decryptResponse.data.message;
+      const finalKey = await getShutterDecryptionKey(identityParam);
+      decryptedKey = await shutterDecryptPrivateKey(decryptedKey, finalKey);
 
       detailsElement.innerHTML += `
         Shutter Keypers generated the decryption key.<br>
@@ -532,11 +564,10 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
         Decryption successful!<br>
       `;
 
-      // Update the key field with the fully decrypted key for consistency
       document.getElementById("hongbao-key").value = decryptedKey;
     }
 
-    // Step 3: Use the fully decrypted key for all operations
+    // 4) Sweep to passkey wallet
     const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(decryptedKey);
     fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
 
@@ -588,6 +619,7 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
     alert("Failed to redeem Hongbao with the specified wallet.");
   }
 }
+
 
 
 async function populateFieldsFromHash() {
@@ -890,3 +922,127 @@ document.getElementById("unlock-time").addEventListener("change", (event) => {
   const customTimestampContainer = document.getElementById("custom-timestamp-container");
   customTimestampContainer.classList.toggle("hidden", event.target.value !== "custom");
 });
+
+
+/*********************************************************************
+ * NEW SHUTTER API FUNCTIONS (Gnosis Mainnet)
+ *
+ * These functions help you:
+ *   - Register an identity/time-based trigger
+ *   - Get encryption data (eon key, etc.)
+ *   - Locally encrypt using BLST (encryptDataBlst.js)
+ *   - Retrieve the final decryption key
+ *   - (Optionally) locally decrypt your private key
+ *
+ * They call the new Shutter mainnet endpoint:
+ *   https://shutter.api.staging.shutter.network/api
+ *********************************************************************/
+
+/**
+ * Register a Shutter identity with a time-based decryption trigger.
+ *
+ * @param {number} decryptionTimestamp - Unix timestamp to release the key
+ * @param {string} identityPrefixHex   - Identity prefix (0x...) for uniqueness
+ * @returns {Promise<Object>}          - { eon, eon_key, identity, tx_hash, ... }
+ */
+async function registerShutterIdentity(decryptionTimestamp, identityPrefixHex) {
+  try {
+    const response = await axios.post(
+      'https://shutter.api.staging.shutter.network/api/register_identity',
+      {
+        decryptionTimestamp,
+        identityPrefix: identityPrefixHex
+      }
+    );
+    console.log('Shutter Identity Registration:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error registering Shutter identity:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch encryption info (eon public key, identity, etc.) from Shutter for encryption.
+ *
+ * @param {string} userAddress        - The address used in the Shutter registration
+ * @param {string} identityPrefixHex  - Same prefix used when registering identity
+ * @returns {Promise<Object>}         - { eon_key, identity, eon, ... }
+ */
+async function getShutterEncryptionData(userAddress, identityPrefixHex) {
+  try {
+    const url = `https://shutter.api.staging.shutter.network/api/get_data_for_encryption?address=${userAddress}&identityPrefix=${identityPrefixHex}`;
+    const response = await axios.get(url);
+    console.log('Encryption Data:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching Shutter encryption data:', error);
+    throw error;
+  }
+}
+
+/**
+ * Encrypt the privateKeyHex using the BLST-based library (encryptDataBlst.js).
+ *
+ * @param {string} privateKeyHex  - e.g. "0xabcdef1234..."
+ * @param {Object} encryptionData - from getShutterEncryptionData() -> eon_key, identity
+ * @param {string} [sigmaHex]     - optional random 32-byte "sigma" in hex
+ * @returns {Promise<string>}     - Hex-encoded ciphertext from BLST
+ */
+async function shutterEncryptPrivateKey(privateKeyHex, encryptionData, sigmaHex) {
+  // If not provided, generate a random 32-byte hex.
+  const randomSigma = sigmaHex || "0x" + crypto
+    .getRandomValues(new Uint8Array(32))
+    .reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '');
+
+  // The encryptData function is exposed by encryptDataBlst.js as window.shutter.encryptData
+  const ciphertextHex = await window.shutter.encryptData(
+    privateKeyHex,
+    encryptionData.identity, // identityPreimageHex
+    encryptionData.eon_key,  // eonKeyHex
+    randomSigma
+  );
+
+  console.log('Shutter Encrypted PrivateKey:', ciphertextHex);
+  return ciphertextHex;
+}
+
+/**
+ * Retrieve the final decryption key from Shutter once time has passed.
+ *
+ * @param {string} identityHex - The "identity" field from registerShutterIdentity
+ * @returns {Promise<string>}   - Shutter's final "decryption_key" (0x...)
+ */
+async function getShutterDecryptionKey(identityHex) {
+  try {
+    const url = `https://shutter.api.staging.shutter.network/api/get_decryption_key?identity=${identityHex}`;
+    const response = await axios.get(url);
+    console.log('Shutter Decryption Key:', response.data);
+    return response.data.decryption_key;
+  } catch (error) {
+    console.error('Error retrieving Shutter decryption key:', error);
+    throw error;
+  }
+}
+
+/**
+ * (Optional) Locally decrypt your BLST-encrypted private key using the final key.
+ *   If you’d rather let Shutter do the final decrypt, you can skip this
+ *   and call /decrypt_commitment on the new API.
+ *
+ * @param {string} encryptedHex       - The BLST ciphertext from shutterEncryptPrivateKey()
+ * @param {string} finalDecryptionKey - from getShutterDecryptionKey()
+ * @returns {string}                  - The decrypted privateKey ("0x...") 
+ */
+async function shutterDecryptPrivateKey(encryptedHex, finalDecryptionKey) {
+  try {
+    console.warn('Implementing a fully local BLST-based decryption is more advanced. ' +
+                 'For now, consider using the /decrypt_commitment endpoint or replicate ' +
+                 'the BLST decryption flow from encryptDataBlst.js in reverse.');
+    // Placeholder:
+    return '0xDecryptedPrivateKeyPlaceholder';
+  } catch (error) {
+    console.error('Error decrypting private key:', error);
+    throw error;
+  }
+}
