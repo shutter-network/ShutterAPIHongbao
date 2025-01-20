@@ -198,21 +198,22 @@ async function sendHongbao(amount) {
     detailsElement.textContent = "Requesting encryption key from Shutter...";
     detailsElement.classList.remove("hidden");
 
-    // 1) REGISTER or ensure your identity on Shutter (if needed)
-    //    For the sake of example, create a random prefix. Or store an existing one.
+    // 1) Register or ensure your identity on Shutter
     const identityPrefixHex = "0x" + crypto
-      .getRandomValues(new Uint8Array(16))
-      .reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), "");
+      .getRandomValues(new Uint8Array(32))
+      .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
 
-    // This step ensures Shutter knows about our time-based release
     const registrationData = await registerShutterIdentity(releaseTimestamp, identityPrefixHex);
+    // Unwrap the real identity
+    const finalIdentity = registrationData.message.identity;
 
     // 2) Get encryption data (eon_key, identity, etc.)
-    //    We'll pass the connected wallet address as userAddress.
     const encryptionData = await getShutterEncryptionData(senderAccount, identityPrefixHex);
+    // Unwrap the actual encryption fields
+    const actualEncryptionData = encryptionData.message;
 
-    // 3) Locally encrypt the privateKey with BLST
-    let shutterEncryptedKey = await shutterEncryptPrivateKey(privateKey, encryptionData);
+    // 3) Encrypt the privateKey with BLST
+    let shutterEncryptedKey = await shutterEncryptPrivateKey(privateKey, actualEncryptionData);
 
     // 4) Optionally password-encrypt the BLST ciphertext
     if (password) {
@@ -221,8 +222,9 @@ async function sendHongbao(amount) {
     }
 
     // 5) Construct the link
-    //    We'll store the "identity" from registration in the link so we can get the final key on redemption.
-    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(shutterEncryptedKey)}&timestamp=${releaseTimestamp}&amount=${amount}&protected=${!!password}&identity=${registrationData.identity}`;
+    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(
+      shutterEncryptedKey
+    )}&timestamp=${releaseTimestamp}&amount=${amount}&protected=${!!password}&identity=${finalIdentity}`;
 
     detailsElement.innerHTML = `
       Identity registered successfully with Shutter!<br>
@@ -233,7 +235,7 @@ async function sendHongbao(amount) {
     linkElement.textContent = `Share this link: ${link}`;
     linkElement.classList.remove("hidden");
 
-    // 6) Fund the ephemeral address with the chosen amount
+    // 6) Fund the ephemeral address
     const hongbaoAmountWei = web3.utils.toWei(amount.toString(), "ether");
     await web3.eth.sendTransaction({
       from: senderAccount,
@@ -250,6 +252,7 @@ async function sendHongbao(amount) {
     alert("Failed to create Hongbao.");
   }
 }
+
 
 
 
@@ -276,17 +279,19 @@ async function fundHongbaoWithPasskey(amount) {
     detailsElement.textContent = "Requesting encryption key from Shutter...";
     detailsElement.classList.remove("hidden");
 
-    // 1) Register identity with Shutter for time-based release
+    // 1) Register identity with Shutter
     const identityPrefixHex = "0x" + crypto
       .getRandomValues(new Uint8Array(32))
-      .reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), "");
+      .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
     const registrationData = await registerShutterIdentity(releaseTimestamp, identityPrefixHex);
+    const finalIdentity = registrationData.message.identity;
 
     // 2) Get encryption data
     const encryptionData = await getShutterEncryptionData(wallet.address, identityPrefixHex);
+    const actualEncryptionData = encryptionData.message;
 
-    // 3) Encrypt privateKey with Shutter BLST
-    let shutterEncryptedKey = await shutterEncryptPrivateKey(privateKey, encryptionData);
+    // 3) Encrypt privateKey with BLST
+    let shutterEncryptedKey = await shutterEncryptPrivateKey(privateKey, actualEncryptionData);
 
     // 4) Optionally AES-encrypt with user password
     if (password) {
@@ -294,7 +299,9 @@ async function fundHongbaoWithPasskey(amount) {
       shutterEncryptedKey = JSON.stringify(passwordEncrypted);
     }
 
-    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(shutterEncryptedKey)}&timestamp=${releaseTimestamp}&amount=${amount}&protected=${!!password}&identity=${registrationData.identity}`;
+    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(
+      shutterEncryptedKey
+    )}&timestamp=${releaseTimestamp}&amount=${amount}&protected=${!!password}&identity=${finalIdentity}`;
 
     detailsElement.innerHTML = `
       Identity registered successfully with Shutter!<br>
@@ -305,8 +312,8 @@ async function fundHongbaoWithPasskey(amount) {
     linkElement.textContent = `Share this link: ${link}`;
     linkElement.classList.remove("hidden");
 
+    // 5) Estimate gas and send transaction
     const hongbaoAmountWei = ethers.parseEther(amount.toString());
-    // Gas checks
     const gasPrice = await provider.send("eth_gasPrice", []);
     const gasLimitEstimate = await provider.estimateGas({
       from: wallet.address,
@@ -328,7 +335,6 @@ async function fundHongbaoWithPasskey(amount) {
       return;
     }
 
-    // Send transaction
     const tx = await walletWithProvider.sendTransaction({
       to: recipientAddress,
       value: hongbaoAmountWei,
@@ -368,12 +374,12 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
 
     let decryptedKey = encryptedKey;
 
-    // 1) If user manually typed a fully decrypted key in the UI, use it.
+    // 1) If user manually typed a fully decrypted key
     const keyField = document.getElementById("hongbao-key").value;
     if (keyField.startsWith("0x") && keyField.length === 66) {
       decryptedKey = keyField;
     } else {
-      // 2) If link says protected=true, do password-based AES decryption first
+      // 2) If password-protected, decrypt first
       const isProtected = new URLSearchParams(window.location.search).get("protected") === "true";
       if (isProtected) {
         const password = document.getElementById("redeem-password").value.trim();
@@ -394,8 +400,7 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
         }
       }
 
-      // 3) Now use the main Shutter approach to finalize decryption:
-      //    For time-based final key, we need the identity from the link
+      // 3) Get the final Shutter decryption key
       const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
       const identityParam = urlParams.get("identity");
       if (!identityParam) {
@@ -403,11 +408,9 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
         return;
       }
 
-      // Get final decryption key from Shutter, if the time is up
       const finalKey = await getShutterDecryptionKey(identityParam);
 
-      // Locally decrypt the BLST ciphertext with finalKey 
-      // (Or call /decrypt_commitment if you prefer.)
+      // BLST decryption (or /decrypt_commitment)
       decryptedKey = await shutterDecryptPrivateKey(decryptedKey, finalKey);
 
       detailsElement.innerHTML += `
@@ -416,11 +419,10 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
         Decryption successful!<br>
       `;
 
-      // Update the key field
       document.getElementById("hongbao-key").value = decryptedKey;
     }
 
-    // 4) Use the fully decrypted key to sweep the funds
+    // 4) Sweep funds using the fully decrypted key
     const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(decryptedKey);
     fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
 
@@ -521,12 +523,12 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
 
     let decryptedKey = encryptedKey;
 
-    // 1) If user typed a raw privateKey
+    // 1) If user typed a fully decrypted private key
     const keyField = document.getElementById("hongbao-key").value;
     if (keyField.startsWith("0x") && keyField.length === 66) {
       decryptedKey = keyField;
     } else {
-      // 2) If protected, do password-based AES decryption first
+      // 2) If password-protected, decrypt first
       const isProtected = new URLSearchParams(window.location.search).get("protected") === "true";
       if (isProtected) {
         const password = document.getElementById("redeem-password").value.trim();
@@ -547,7 +549,7 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
         }
       }
 
-      // 3) Shutter final key for time-based release
+      // 3) Time-based Shutter final key
       const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
       const identityParam = urlParams.get("identity");
       if (!identityParam) {
@@ -567,7 +569,7 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
       document.getElementById("hongbao-key").value = decryptedKey;
     }
 
-    // 4) Sweep to passkey wallet
+    // 4) Sweep to the passkey wallet
     const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(decryptedKey);
     fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
 
