@@ -1053,7 +1053,15 @@ async function getShutterDecryptionKey(identityHex) {
  */
 async function shutterDecryptPrivateKey(encryptedHex, finalDecryptionKey) {
   try {
-    // Calls your local decrypt function in encryptDataBlst.js
+    // NEW: Quick check to ensure we have valid-looking BLST ciphertext:
+    // Typically starts with "0x03" and is at least ~130+ hex chars.
+    // (The exact length can vary, but definitely more than 66.)
+    if (!encryptedHex || !encryptedHex.startsWith("0x03") || encryptedHex.length < 100) {
+      console.error("shutterDecryptPrivateKey: invalid or non-BLST ciphertext:", encryptedHex);
+      throw new Error("Not a valid BLST ciphertext. Aborting local BLST decrypt.");
+    }
+
+    // Now call your local decrypt function
     const decryptedHex = await window.shutter.decrypt(encryptedHex, finalDecryptionKey);
     console.log('Locally decrypted BLST private key:', decryptedHex);
     return decryptedHex;
