@@ -626,13 +626,27 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
   }
 }
 
-
 async function populateFieldsFromHash() {
+  console.log("=== populateFieldsFromHash: Start ===");
+
   const hash = window.location.hash.substring(1);
-  const params = new URLSearchParams(hash.split("?")[1]);
+  console.log("hash:", hash);
+
+  const [_, queryString] = hash.split("?");
+  const params = new URLSearchParams(queryString);
   const encryptedKey = params.get("key");
   const timestamp = params.get("timestamp");
   const amount = params.get("amount");
+  const identityParam = params.get("identity");
+  const isProtected = params.get("protected") === "true";
+
+  console.log("Params found:", {
+    encryptedKey,
+    timestamp,
+    amount,
+    identityParam,
+    isProtected,
+  });
 
   const senderSection = document.getElementById("sender-section");
   const receiverSection = document.getElementById("receiver-section");
@@ -641,95 +655,113 @@ async function populateFieldsFromHash() {
   const claimNewWalletButton = document.getElementById("redeem-new-wallet");
   const toggleOtherOptionsButton = document.getElementById("toggle-other-options");
 
-  // Hide sender & receiver sections by default
+  // Hide both sections by default
   senderSection.classList.add("hidden");
   receiverSection.classList.add("hidden");
 
-  // If we have valid link params
-  if (encryptedKey && timestamp && amount) {
-    // Show the receiver section
-    receiverSection.classList.remove("hidden");
-    document.getElementById("hongbao-key").value = encryptedKey;
-    document.getElementById("hongbao-timestamp").value = timestamp;
-    document.getElementById("redeem-hongbao").setAttribute("data-amount", amount);
-    hongbaoVisual.classList.remove("hidden");
-
-    // If time is up, let user redeem
-    const currentTime = Math.floor(Date.now() / 1000);
-    if (currentTime >= parseInt(timestamp, 10)) {
-      document.getElementById("countdown").textContent = "Hongbao is now available!";
-      if (claimNewWalletButton) claimNewWalletButton.classList.remove("hidden");
-      if (toggleOtherOptionsButton) toggleOtherOptionsButton.classList.remove("hidden");
-    } else {
-      // Otherwise show countdown
-      startCountdown(parseInt(timestamp, 10));
-    }
-
-    detailsElement.textContent = "Checking Hongbao status...";
-    detailsElement.classList.remove("hidden");
-
-    try {
-      // Check identity param
-      const identityParam = params.get("identity");
-      if (!identityParam) {
-        throw new Error("No identity found in URL. Cannot check or decrypt Hongbao.");
-      }
-
-      // 1) Check if link says protected=true, do password-based AES decryption first
-      let possiblyShutterCipher = encryptedKey; // local copy
-      const isProtected = params.get("protected") === "true";
-      if (isProtected) {
-        // Prompt user for password in the UI
-        const passwordInput = document.getElementById("redeem-password");
-        if (!passwordInput || !passwordInput.value.trim()) {
-          // If user hasn't entered password yet, just show a note
-          detailsElement.innerHTML = "This Hongbao is password-protected. Enter password to decrypt.";
-          return;
-        }
-        const password = passwordInput.value.trim();
-
-        try {
-          const encryptedObject = JSON.parse(possiblyShutterCipher);
-          possiblyShutterCipher = await decryptWithPassword(
-            encryptedObject.encrypted,
-            password,
-            encryptedObject.iv
-          );
-        } catch (err) {
-          console.error("Password decryption failed:", err);
-          detailsElement.innerHTML = "Invalid password. Unable to decrypt the Hongbao.";
-          return;
-        }
-      }
-
-      // 2) If after password decryption it looks like a Shutter cipher (0x03...), try Shutter decryption
-      if (possiblyShutterCipher.startsWith("0x03") && possiblyShutterCipher.length > 66) {
-        const finalKey = await getShutterDecryptionKey(identityParam);
-        const ephemeralPrivateKey = await shutterDecryptPrivateKey(possiblyShutterCipher, finalKey);
-
-        // Check ephemeral account balance
-        const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(ephemeralPrivateKey);
-        fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
-
-        await checkHongbaoBalance(hongbaoAccount.address, amount);
-      } else {
-        // Possibly locked, or the user needs to enter password
-        detailsElement.innerHTML = `
-          The Hongbao might still be locked, or is password-protected.<br>
-          If password-protected, enter your password and try again.
-        `;
-      }
-    } catch (error) {
-      console.error("Error retrieving or decrypting key with Shutter API:", error);
-      detailsElement.textContent = "The Hongbao might still be locked or password-protected.";
-    }
-  } else {
-    // If missing param, show sender section
+  // If no required params, show sender
+  if (!encryptedKey || !timestamp || !amount) {
+    console.log("No valid ShutterHongbao link found. Showing sender section.");
     senderSection.classList.remove("hidden");
+    return;
   }
 
-  // Handle optional password field visibility
+  // We have a valid link, so show receiver section
+  receiverSection.classList.remove("hidden");
+  document.getElementById("hongbao-key").value = encryptedKey;
+  document.getElementById("hongbao-timestamp").value = timestamp;
+  document.getElementById("redeem-hongbao").setAttribute("data-amount", amount);
+  hongbaoVisual.classList.remove("hidden");
+
+  // If time is already up
+  const currentTime = Math.floor(Date.now() / 1000);
+  if (currentTime >= parseInt(timestamp, 10)) {
+    console.log("Time is up, Hongbao is available immediately.");
+    document.getElementById("countdown").textContent = "Hongbao is now available!";
+    if (claimNewWalletButton) claimNewWalletButton.classList.remove("hidden");
+    if (toggleOtherOptionsButton) toggleOtherOptionsButton.classList.remove("hidden");
+  } else {
+    // Otherwise start a countdown
+    console.log("Time not up yet. Starting countdown...");
+    startCountdown(parseInt(timestamp, 10));
+  }
+
+  detailsElement.textContent = "Checking Hongbao status...";
+  detailsElement.classList.remove("hidden");
+
+  // Proceed to attempt final or partial decryption
+  try {
+    console.log("Checking identityParam:", identityParam);
+    if (!identityParam) {
+      console.error("No identity param found. Can't fetch final key.");
+      throw new Error("No identity found in URL. Cannot check or decrypt Hongbao.");
+    }
+
+    // Step A: If it's password-protected, do local AES decryption
+    let possiblyShutterCipher = encryptedKey;
+    if (isProtected) {
+      const passwordField = document.getElementById("redeem-password");
+      if (!passwordField) {
+        console.warn("No password field in DOM. Can't proceed to password decrypt.");
+        detailsElement.innerHTML = "This Hongbao is password-protected. Please enter a password.";
+        return;
+      }
+      const userPassword = passwordField.value.trim();
+      console.log("User typed password:", userPassword ? "[REDACTED]" : "EMPTY");
+
+      if (!userPassword) {
+        console.warn("No password typed yet. Asking user to type it first.");
+        detailsElement.innerHTML = "This Hongbao is password-protected. Enter a password to decrypt.";
+        return;
+      }
+
+      try {
+        console.log("Attempting password-based AES decryption...");
+        const encryptedObject = JSON.parse(possiblyShutterCipher);
+        possiblyShutterCipher = await decryptWithPassword(
+          encryptedObject.encrypted,
+          userPassword,
+          encryptedObject.iv
+        );
+        console.log("Post-password data (possibly Shutter ciphertext):", possiblyShutterCipher);
+      } catch (aesErr) {
+        console.error("Password AES decryption failed:", aesErr);
+        detailsElement.innerHTML = "Invalid password. Unable to decrypt the Hongbao.";
+        return;
+      }
+    } else {
+      console.log("Not password-protected. Data is presumably raw Shutter ciphertext or locked.");
+    }
+
+    // Step B: If it looks like Shutter ciphertext, do Shutter BLST decrypt
+    if (possiblyShutterCipher.startsWith("0x03") && possiblyShutterCipher.length > 66) {
+      console.log("Looks like Shutter ciphertext. Attempting final BLST decrypt...");
+      const finalKey = await getShutterDecryptionKey(identityParam);
+      console.log("Final Key retrieved from Shutter:", finalKey);
+
+      console.log("Calling shutterDecryptPrivateKey with ciphertext:", possiblyShutterCipher);
+      const ephemeralPrivateKey = await shutterDecryptPrivateKey(possiblyShutterCipher, finalKey);
+      console.log("BLST decrypted ephemeralPrivateKey:", ephemeralPrivateKey);
+
+      // Step C: Check ephemeral account balance
+      const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(ephemeralPrivateKey);
+      fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
+
+      console.log("Ephemeral account address:", hongbaoAccount.address);
+      await checkHongbaoBalance(hongbaoAccount.address, amount);
+    } else {
+      console.warn("Not pure Shutter ciphertext or too short. Possibly locked or needs password.");
+      detailsElement.innerHTML =
+        "Shutter ciphertext might be password-protected, or not yet available. Enter password if needed.";
+    }
+  } catch (error) {
+    console.error("Error retrieving or decrypting key with Shutter API:", error);
+    detailsElement.textContent = "The Hongbao might still be locked or password-protected.";
+  }
+
+  // Always handle optional password field
   handlePasswordVisibility();
+  console.log("=== populateFieldsFromHash: End ===");
 }
 
 
