@@ -953,19 +953,21 @@ document.getElementById("unlock-time").addEventListener("change", (event) => {
  *********************************************************************/
 
 /**
- * Register a Shutter identity with a time-based decryption trigger.
+ * Register a Shutter identity with a time-based decryption trigger on the mainnet registry.
  *
- * @param {number} decryptionTimestamp - Unix timestamp to release the key
- * @param {string} identityPrefixHex   - Identity prefix (0x...) for uniqueness
- * @returns {Promise<Object>}          - { eon, eon_key, identity, tx_hash, ... } wrapped in { message: {...} }
+ * @param {number} decryptionTimestamp - Unix timestamp for key release
+ * @param {string} identityPrefixHex   - 32-byte prefix (0x...) for uniqueness
+ * @returns {Promise<Object>}          - { message: { eon, eon_key, identity, ... } }
  */
 async function registerShutterIdentity(decryptionTimestamp, identityPrefixHex) {
   try {
+    // Add "registry: 0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc" to direct the Shutter API to the mainnet registry
     const response = await axios.post(
       'https://shutter.api.staging.shutter.network/api/register_identity',
       {
         decryptionTimestamp,
-        identityPrefix: identityPrefixHex
+        identityPrefix: identityPrefixHex,
+        registry: "0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc"
       }
     );
     console.log('Shutter Identity Registration:', response.data);
@@ -977,15 +979,18 @@ async function registerShutterIdentity(decryptionTimestamp, identityPrefixHex) {
 }
 
 /**
- * Fetch encryption info (eon public key, identity, etc.) from Shutter for encryption.
+ * Fetch encryption info (eon public key, identity, etc.) from Shutter mainnet registry.
  *
- * @param {string} userAddress        - The address used in the Shutter registration
- * @param {string} identityPrefixHex  - Same prefix used when registering identity
- * @returns {Promise<Object>}         - { eon_key, identity, eon, ... } wrapped in { message: {...} }
+ * @param {string} userAddress        - (Unused now, we force the registry address)
+ * @param {string} identityPrefixHex  - The same 32-byte prefix from registration
+ * @returns {Promise<Object>}         - { message: { eon_key, identity, ... } }
  */
 async function getShutterEncryptionData(userAddress, identityPrefixHex) {
   try {
-    const url = `https://shutter.api.staging.shutter.network/api/get_data_for_encryption?address=${userAddress}&identityPrefix=${identityPrefixHex}`;
+    // Force the registry address instead of userAddress:
+    // Shutter uses the "address" param to find the correct registry identity
+    const url = `https://shutter.api.staging.shutter.network/api/get_data_for_encryption?address=0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc&identityPrefix=${identityPrefixHex}`;
+
     const response = await axios.get(url);
     console.log('Encryption Data:', response.data);
     return response.data;
@@ -994,6 +999,7 @@ async function getShutterEncryptionData(userAddress, identityPrefixHex) {
     throw error;
   }
 }
+
 
 /**
  * Encrypt a private key using BLST-based encryption (encryptDataBlst.js).
