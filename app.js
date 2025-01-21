@@ -768,11 +768,25 @@ async function populateFieldsFromHash() {
 
 function handlePasswordVisibility() {
   const hash = window.location.hash.substring(1);
-  const params = new URLSearchParams(hash.split("?")[1]);
+  
+  // Safely split on "?", in case it's missing.
+  let paramString = "";
+  if (hash.includes("?")) {
+    paramString = hash.split("?")[1] || "";
+  }
+  // Now parse the substring as URL params
+  const params = new URLSearchParams(paramString);
   const isProtected = params.get("protected") === "true";
-
+  
   const passwordContainer = document.getElementById("password-container");
+  if (!passwordContainer) {
+    console.warn("No 'password-container' element found. Cannot toggle password visibility.");
+    return;
+  }
 
+  console.log("handlePasswordVisibility: protected=", isProtected);
+  
+  // Show password fields if protected=true, otherwise hide them
   if (isProtected) {
     passwordContainer.classList.remove("hidden");
   } else {
