@@ -945,7 +945,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (decryptPasswordButton) {
     decryptPasswordButton.addEventListener('click', async () => {
       try {
-        // Step 1: Get encrypted key, password, and timestamp
         const encryptedKeyField = document.getElementById('hongbao-key').value;
         const password = document.getElementById('redeem-password').value.trim();
         const timestamp = parseInt(document.getElementById('hongbao-timestamp').value, 10);
@@ -961,7 +960,6 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
   
-        // Step 2: Decrypt AES layer with password
         const encryptedObject = JSON.parse(encryptedKeyField);
         const passwordDecryptedCipher = await decryptWithPassword(
           encryptedObject.encrypted,
@@ -969,13 +967,10 @@ document.addEventListener('DOMContentLoaded', () => {
           encryptedObject.iv
         );
   
-        console.log("Password Decrypted Cipher:", passwordDecryptedCipher);
-  
         if (!passwordDecryptedCipher.startsWith("0x03") || passwordDecryptedCipher.length < 100) {
           throw new Error("Decryption with password failed. Resulting data is invalid.");
         }
   
-        // Step 3: Fetch Shutter decryption key
         const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
         const identityParam = urlParams.get("identity");
         if (!identityParam) {
@@ -984,21 +979,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
   
         const finalKey = await getShutterDecryptionKey(identityParam);
-  
-        // Step 4: Perform Shutter decryption
         const finalDecryptedKey = await shutterDecryptPrivateKey(passwordDecryptedCipher, finalKey);
-        console.log("Final Decrypted Private Key:", finalDecryptedKey);
   
-        // Step 5: Store the decrypted key in a separate field
+        // Store decrypted key in a hidden field
         const decryptedKeyField = document.getElementById('decrypted-hongbao-key');
         if (decryptedKeyField) {
-          decryptedKeyField.value = finalDecryptedKey; // Hidden field for decrypted key
+          decryptedKeyField.value = finalDecryptedKey;
         } else {
-          // Fallback: Use an in-memory variable
-          window.decryptedHongbaoKey = finalDecryptedKey;
+          window.decryptedHongbaoKey = finalDecryptedKey; // Fallback for storage
         }
   
-        // Step 6: Validate balance and inform the user
         const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(finalDecryptedKey);
         fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
   
@@ -1008,15 +998,11 @@ document.addEventListener('DOMContentLoaded', () => {
         alert("Successfully decrypted the Hongbao!");
       } catch (error) {
         console.error("Error during decryption or balance check:", error);
-  
-        if (error.response && error.response.status === 403) {
-          alert("The Shutter decryption key is not yet available. Please try again after the unlock time.");
-        } else {
-          alert("Failed to decrypt or check balance. Ensure the password and key are correct.");
-        }
+        alert("Failed to decrypt or check balance. Ensure the password and key are correct.");
       }
     });
   }
+  
   
     
   
