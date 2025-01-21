@@ -961,13 +961,13 @@ document.getElementById("unlock-time").addEventListener("change", (event) => {
  */
 async function registerShutterIdentity(decryptionTimestamp, identityPrefixHex) {
   try {
-    // Add registry param for mainnet
+    // Provide the registry param in the request body
     const response = await axios.post(
       'https://shutter.api.staging.shutter.network/api/register_identity',
       {
         decryptionTimestamp,
         identityPrefix: identityPrefixHex,
-        registry: "0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc",
+        registry: "0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc"
       }
     );
     console.log('Shutter Identity Registration:', response.data);
@@ -979,18 +979,19 @@ async function registerShutterIdentity(decryptionTimestamp, identityPrefixHex) {
 }
 
 /**
- * Fetch encryption info (eon public key, identity, etc.) from Shutter mainnet registry.
+ * Fetch encryption info (eon public key, identity, etc.) from the mainnet registry.
  *
  * @param {string} userAddress        - (Unused now, we force the mainnet registry address)
- * @param {string} identityPrefixHex  - The same 32-byte prefix from registration
+ * @param {string} identityPrefixHex  - Same prefix from registration
  * @returns {Promise<Object>}         - { message: { eon_key, identity, ... } }
  */
 async function getShutterEncryptionData(userAddress, identityPrefixHex) {
   try {
-    // Use the mainnet registry forcibly:
+    // Force usage of the mainnet registry address
     const url =
       `https://shutter.api.staging.shutter.network/api/get_data_for_encryption?` +
       `address=0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc&identityPrefix=${identityPrefixHex}`;
+
     const response = await axios.get(url);
     console.log('Encryption Data:', response.data);
     return response.data;
@@ -1006,22 +1007,16 @@ async function getShutterEncryptionData(userAddress, identityPrefixHex) {
  *
  * @param {string} privateKeyHex  - e.g. "0xabcdef1234..."
  * @param {Object} encryptionData - from getShutterEncryptionData().message -> { eon_key, identity, ... }
- * @param {string} [sigmaHex]     - Optional random 32-byte "sigma" in hex
+ * @param {string} [sigmaHex]     - Optional 32-byte "sigma" in hex
  * @returns {Promise<string>}     - Hex-encoded ciphertext from BLST
  */
 async function shutterEncryptPrivateKey(privateKeyHex, encryptionData, sigmaHex) {
   console.log("=== shutterEncryptPrivateKey Debug ===");
   console.log("privateKeyHex:", privateKeyHex, "length:", privateKeyHex?.length);
-  console.log(
-    "encryptionData.identity:", encryptionData?.identity,
-    "length:", encryptionData?.identity?.length
-  );
-  console.log(
-    "encryptionData.eon_key:", encryptionData?.eon_key,
-    "length:", encryptionData?.eon_key?.length
-  );
+  console.log("encryptionData.identity:", encryptionData?.identity, "length:", encryptionData?.identity?.length);
+  console.log("encryptionData.eon_key:", encryptionData?.eon_key, "length:", encryptionData?.eon_key?.length);
 
-  // If not provided, generate a random 32-byte sigma
+  // Optionally generate a random 32-byte sigma if none provided
   const randomSigma = sigmaHex || "0x" + crypto
     .getRandomValues(new Uint8Array(32))
     .reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '');
@@ -1029,13 +1024,13 @@ async function shutterEncryptPrivateKey(privateKeyHex, encryptionData, sigmaHex)
   console.log("randomSigma:", randomSigma, "length:", randomSigma.length);
 
   if (!privateKeyHex || privateKeyHex.length < 66) {
-    console.error("Private key is too short or missing. Must be '0x' + 64 hex chars.");
+    console.error("Private key is too short. Must be '0x' + 64 hex chars.");
   }
   if (!encryptionData.identity || encryptionData.identity.length < 66) {
-    console.error("encryptionData.identity seems too short or missing.");
+    console.error("encryptionData.identity is missing or too short.");
   }
   if (!encryptionData.eon_key || encryptionData.eon_key.length < 66) {
-    console.error("encryptionData.eon_key seems too short or missing.");
+    console.error("encryptionData.eon_key is missing or too short.");
   }
 
   try {
@@ -1055,15 +1050,14 @@ async function shutterEncryptPrivateKey(privateKeyHex, encryptionData, sigmaHex)
 }
 
 /**
- * Retrieve the final epoch secret key from Shutter after the time lock passes,
- * on the mainnet registry (0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc).
+ * Retrieve the final epoch secret key from the mainnet registry after the time lock passes.
  *
  * @param {string} identityHex - The "identity" returned when registering
  * @returns {Promise<string>}   - Shutter's final "decryption_key" (0x...)
  */
 async function getShutterDecryptionKey(identityHex) {
   try {
-    // Add registry param to ensure mainnet usage
+    // Also specify the registry param in the query string
     const url =
       `https://shutter.api.staging.shutter.network/api/get_decryption_key?` +
       `identity=${identityHex}&registry=0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc`;
@@ -1085,13 +1079,13 @@ async function getShutterDecryptionKey(identityHex) {
  */
 async function shutterDecryptPrivateKey(encryptedHex, finalDecryptionKey) {
   try {
-    // Ensure "encryptedHex" is valid BLST ciphertext (post-password decode).
+    // Validate the BLST ciphertext starts with "0x03" and is long enough
     if (!encryptedHex || !encryptedHex.startsWith("0x03") || encryptedHex.length < 100) {
-      console.error("shutterDecryptPrivateKey: Not valid BLST ciphertext:", encryptedHex);
+      console.error("shutterDecryptPrivateKey: Invalid BLST ciphertext:", encryptedHex);
       throw new Error("Expected valid BLST ciphertext (0x03...). Cannot decrypt.");
     }
 
-    // Call your local BLST decrypt in encryptDataBlst.js
+    // Call your local BLST decryption from encryptDataBlst.js
     const decryptedHex = await window.shutter.decrypt(encryptedHex, finalDecryptionKey);
     console.log("Locally decrypted BLST private key:", decryptedHex);
     return decryptedHex;
@@ -1100,3 +1094,4 @@ async function shutterDecryptPrivateKey(encryptedHex, finalDecryptionKey) {
     throw error;
   }
 }
+
