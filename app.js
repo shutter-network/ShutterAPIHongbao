@@ -966,8 +966,8 @@ async function registerShutterIdentity(decryptionTimestamp, identityPrefixHex) {
       'https://shutter.api.staging.shutter.network/api/register_identity',
       {
         decryptionTimestamp,
-        identityPrefix: identityPrefixHex,
-        registry: "0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc"
+        identityPrefix: identityPrefixHex
+      
       }
     );
     console.log('Shutter Identity Registration:', response.data);
