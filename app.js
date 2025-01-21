@@ -1128,8 +1128,8 @@ async function getShutterDecryptionKey(identityHex) {
       `https://shutter.api.staging.shutter.network/api/get_decryption_key?` +
       `identity=${identityHex}&registry=0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc`;
     const response = await axios.get(url);
-    console.log('Shutter Decryption Key:', response.data);
-    return response.data.decryption_key;
+    console.log('Shutter Decryption Key:', response.data.message.decryption_key);
+    return response.data.message.decryption_key;
   } catch (error) {
     console.error('Error retrieving Shutter decryption key:', error);
     throw error;
