@@ -776,7 +776,7 @@ function handlePasswordVisibility() {
   }
   // Now parse the substring as URL params
   const params = new URLSearchParams(paramString);
-  const isProtected = params.get("protected") === "true";
+  const isProtected = params.get("encrypted") === "true";
   
   const passwordContainer = document.getElementById("password-container");
   if (!passwordContainer) {
