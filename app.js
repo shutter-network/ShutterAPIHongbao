@@ -21,11 +21,9 @@ if (typeof window.ethereum === 'undefined') {
   console.warn('MetaMask is not available. Using fallback provider for redemption.');
 }
 
+
 const web3 = new Web3(window.ethereum);
 
-/*************************************************
- * HELPER: Ensure Gnosis chain
- ************************************************/
 async function ensureGnosisChain() {
   if (typeof window.ethereum === 'undefined') {
     throw new Error('MetaMask is required to create a Hongbao.');
@@ -55,9 +53,8 @@ async function ensureGnosisChain() {
   }
 }
 
-/*************************************************
- * HELPER: Connect to MetaMask
- ************************************************/
+
+// Connect MetaMask wallet
 async function connectMetaMask() {
   try {
     await ensureGnosisChain();
@@ -71,9 +68,7 @@ async function connectMetaMask() {
   }
 }
 
-/*************************************************
- * HELPER: Copy to clipboard
- ************************************************/
+// Copy to clipboard functionality
 function copyToClipboard(text) {
   const tempInput = document.createElement('input');
   tempInput.style.position = 'absolute';
@@ -85,14 +80,14 @@ function copyToClipboard(text) {
   document.body.removeChild(tempInput);
   alert('Link copied to clipboard!');
 }
+
 document.getElementById('hongbao-link').addEventListener('click', (event) => {
   const link = event.target.textContent.replace('Share this link: ', '');
   copyToClipboard(link);
 });
 
-/*************************************************
- * HELPER: AES Encrypt/Decrypt with password
- ************************************************/
+
+// AES Encryption using Web Crypto API
 async function encryptWithPassword(data, password) {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -128,6 +123,7 @@ async function encryptWithPassword(data, password) {
   };
 }
 
+// AES Decryption using Web Crypto API
 async function decryptWithPassword(encryptedData, password, iv) {
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
@@ -160,34 +156,30 @@ async function decryptWithPassword(encryptedData, password, iv) {
   return decoder.decode(decrypted);
 }
 
-/*************************************************
- * HELPER: Calculate release time
- ************************************************/
+
 function calculateReleaseTimestamp() {
   const unlockTimeSelect = document.getElementById("unlock-time");
   const selectedOption = unlockTimeSelect.value;
   
   if (selectedOption === "custom") {
-    const customTimestampInput = document.getElementById("custom-timestamp").value;
-    if (!customTimestampInput) {
-      alert("Please select a valid custom timestamp.");
-      throw new Error("Invalid custom timestamp.");
-    }
-    return Math.floor(new Date(customTimestampInput).getTime() / 1000);
+      const customTimestampInput = document.getElementById("custom-timestamp").value;
+      if (!customTimestampInput) {
+          alert("Please select a valid custom timestamp.");
+          throw new Error("Invalid custom timestamp.");
+      }
+      return Math.floor(new Date(customTimestampInput).getTime() / 1000);
   }
 
   if (selectedOption === "lunar-new-year") {
-    // Lunar New Year timestamp for 2025 in UTC
-    return Math.floor(new Date("2025-01-29T12:36:00Z").getTime() / 1000);
+      // Lunar New Year timestamp for 2025 in UTC
+      return Math.floor(new Date("2025-01-29T12:36:00Z").getTime() / 1000);
   }
 
   // Predefined time options in seconds
   return Math.floor(Date.now() / 1000) + parseInt(selectedOption, 10);
 }
 
-/*************************************************
- * SENDER: Create Hongbao w/ MetaMask
- ************************************************/
+
 async function sendHongbao(amount) {
   try {
     const senderAccount = await connectMetaMask();
@@ -206,27 +198,30 @@ async function sendHongbao(amount) {
     detailsElement.textContent = "Requesting encryption key from Shutter...";
     detailsElement.classList.remove("hidden");
 
-    // 1) Register identity on mainnet
+    // 1) Register or ensure your identity on Shutter
     const identityPrefixHex = "0x" + crypto
       .getRandomValues(new Uint8Array(32))
       .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
+
     const registrationData = await registerShutterIdentity(releaseTimestamp, identityPrefixHex);
+    // Unwrap the real identity
     const finalIdentity = registrationData.message.identity;
 
-    // 2) Get encryption data
+    // 2) Get encryption data (eon_key, identity, etc.)
     const encryptionData = await getShutterEncryptionData(senderAccount, identityPrefixHex);
+    // Unwrap the actual encryption fields
     const actualEncryptionData = encryptionData.message;
 
-    // 3) Encrypt ephemeral privateKey with BLST
+    // 3) Encrypt the privateKey with BLST
     let shutterEncryptedKey = await shutterEncryptPrivateKey(privateKey, actualEncryptionData);
 
-    // 4) Optionally password-encrypt that
+    // 4) Optionally password-encrypt the BLST ciphertext
     if (password) {
       const passwordEncrypted = await encryptWithPassword(shutterEncryptedKey, password);
       shutterEncryptedKey = JSON.stringify(passwordEncrypted);
     }
 
-    // 5) Construct link
+    // 5) Construct the link
     const link = `${window.location.origin}/ShutterAPIHongbao/#redeem?key=${encodeURIComponent(
       shutterEncryptedKey
     )}&timestamp=${releaseTimestamp}&amount=${amount}&protected=${!!password}&identity=${finalIdentity}`;
@@ -240,7 +235,7 @@ async function sendHongbao(amount) {
     linkElement.textContent = `Share this link: ${link}`;
     linkElement.classList.remove("hidden");
 
-    // 6) Fund ephemeral address
+    // 6) Fund the ephemeral address
     const hongbaoAmountWei = web3.utils.toWei(amount.toString(), "ether");
     await web3.eth.sendTransaction({
       from: senderAccount,
@@ -258,9 +253,9 @@ async function sendHongbao(amount) {
   }
 }
 
-/*************************************************
- * SENDER: Create Hongbao w/ Passkey
- ************************************************/
+
+
+
 async function fundHongbaoWithPasskey(amount) {
   try {
     const wallet = await authenticateWallet(); // Passkey-based wallet
@@ -284,7 +279,7 @@ async function fundHongbaoWithPasskey(amount) {
     detailsElement.textContent = "Requesting encryption key from Shutter...";
     detailsElement.classList.remove("hidden");
 
-    // 1) Register identity on mainnet
+    // 1) Register identity with Shutter
     const identityPrefixHex = "0x" + crypto
       .getRandomValues(new Uint8Array(32))
       .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), "");
@@ -295,10 +290,10 @@ async function fundHongbaoWithPasskey(amount) {
     const encryptionData = await getShutterEncryptionData(wallet.address, identityPrefixHex);
     const actualEncryptionData = encryptionData.message;
 
-    // 3) Encrypt ephemeral privateKey with BLST
+    // 3) Encrypt privateKey with BLST
     let shutterEncryptedKey = await shutterEncryptPrivateKey(privateKey, actualEncryptionData);
 
-    // 4) Optional password encrypt
+    // 4) Optionally AES-encrypt with user password
     if (password) {
       const passwordEncrypted = await encryptWithPassword(shutterEncryptedKey, password);
       shutterEncryptedKey = JSON.stringify(passwordEncrypted);
@@ -317,7 +312,7 @@ async function fundHongbaoWithPasskey(amount) {
     linkElement.textContent = `Share this link: ${link}`;
     linkElement.classList.remove("hidden");
 
-    // 5) Estimate gas + fund ephemeral address
+    // 5) Estimate gas and send transaction
     const hongbaoAmountWei = ethers.parseEther(amount.toString());
     const gasPrice = await provider.send("eth_gasPrice", []);
     const gasLimitEstimate = await provider.estimateGas({
@@ -334,7 +329,9 @@ async function fundHongbaoWithPasskey(amount) {
       const formattedRequired = ethers.formatEther(hongbaoAmountWei + gasCost);
       const formattedBalance = ethers.formatEther(walletBalance);
 
-      alert(`Insufficient funds. Required: ${formattedRequired} XDAI (includes ${formattedGasCost} for gas). Available: ${formattedBalance} XDAI.`);
+      alert(`Insufficient funds to fund the Hongbao. 
+        Required: ${formattedRequired} xDAI (includes ${formattedGasCost} xDAI for gas). 
+        Available: ${formattedBalance} xDAI.`);
       return;
     }
 
@@ -356,10 +353,6 @@ async function fundHongbaoWithPasskey(amount) {
     alert("Failed to fund Hongbao with Passkey Wallet.");
   }
 }
-
-/*************************************************
- * RECEIVER: Redeem + Sweep (MetaMask)
- ************************************************/
 async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
   try {
     await ensureGnosisChain();
@@ -379,12 +372,12 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
 
     let decryptedKey = encryptedKey;
 
-    // 1) If user typed a raw privateKey
+    // 1) If user manually typed a fully decrypted key
     const keyField = document.getElementById("hongbao-key").value;
     if (keyField.startsWith("0x") && keyField.length === 66) {
       decryptedKey = keyField;
     } else {
-      // 2) If protected, do password decryption
+      // 2) If link says protected=true, do password-based AES decryption first
       const isProtected = new URLSearchParams(window.location.search).get("protected") === "true";
       if (isProtected) {
         const password = document.getElementById("redeem-password").value.trim();
@@ -400,13 +393,17 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
             encryptedObject.iv
           );
         } catch (error) {
-          alert("Invalid password. Unable to decrypt Hongbao.");
+          alert("Invalid password. Unable to decrypt the Hongbao.");
           return;
         }
       }
 
-      // 3) If it starts "0x03", do local BLST decrypt
-      if (decryptedKey.startsWith("0x03") && decryptedKey.length > 66) {
+      // 3) Check if we still have BLST ciphertext (e.g., starts with "0x03").
+      //    If it's clearly a normal private key already (66 chars), skip local BLST.
+      if (
+        decryptedKey.startsWith("0x03") && // BLST version byte
+        decryptedKey.length > 66           // Enough length to be ciphertext
+      ) {
         const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
         const identityParam = urlParams.get("identity");
         if (!identityParam) {
@@ -415,6 +412,8 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
         }
 
         const finalKey = await getShutterDecryptionKey(identityParam);
+
+        // Locally decrypt the BLST ciphertext with finalKey
         decryptedKey = await shutterDecryptPrivateKey(decryptedKey, finalKey);
 
         detailsElement.innerHTML += `
@@ -427,7 +426,7 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
       }
     }
 
-    // 4) Use the fully decrypted key to sweep
+    // 4) Use the fully decrypted key to sweep the funds
     const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(decryptedKey);
     fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
 
@@ -480,16 +479,18 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
   }
 }
 
-/*************************************************
- * RECEIVER: Redeem w/ New or Existing Passkey
- ************************************************/
+
+
+
+
 async function claimToNewWallet(encryptedKey, timestamp, amount) {
   try {
-    const wallet = await registerPasskey("My New Hongbao Wallet");
+    const wallet = await registerPasskey("My New Hongbao Wallet"); // Create a new passkey wallet
     console.log("New Passkey Wallet Address:", wallet.address);
 
+    // Proceed to redeem and sweep with the new wallet
     await redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet);
-    alert(`A new wallet was created, funds claimed to: ${wallet.address}`);
+    alert(`A new wallet was created successfully, and funds were claimed to: ${wallet.address}`);
   } catch (error) {
     console.error("Error claiming to a new wallet:", error);
     alert("Failed to claim Hongbao to a new wallet.");
@@ -498,19 +499,16 @@ async function claimToNewWallet(encryptedKey, timestamp, amount) {
 
 async function claimToExistingWallet(encryptedKey, timestamp, amount) {
   try {
-    const wallet = await authenticateWallet();
+    const wallet = await authenticateWallet(); // Authenticate an existing wallet
     console.log("Existing Passkey Wallet Address:", wallet.address);
 
+    // Proceed to redeem and sweep with the existing wallet
     await redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet);
   } catch (error) {
     console.error("Error claiming to an existing wallet:", error);
     alert("Failed to claim Hongbao to an existing wallet.");
   }
 }
-
-/*************************************************
- * RECEIVER: Redeem + Sweep to Passkey
- ************************************************/
 async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) {
   try {
     const currentTime = Math.floor(Date.now() / 1000);
@@ -526,9 +524,9 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
     detailsElement.innerHTML = "Checking for password protection...<br>";
     detailsElement.classList.remove("hidden");
 
-    let fullyEncryptedKey = encryptedKey; // never a plain PK
+    let fullyEncryptedKey = encryptedKey; // This is never a plain private key.
 
-    // 1) If link says protected=true, do AES decrypt
+    // 1) If the link says "protected=true", do password-based AES decryption first
     const isProtected = new URLSearchParams(window.location.search).get("protected") === "true";
     if (isProtected) {
       const password = document.getElementById("redeem-password").value.trim();
@@ -536,7 +534,9 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
         alert("Password is required to decrypt this Hongbao.");
         return;
       }
+
       try {
+        // The key is JSON: { encrypted, iv }
         const encryptedObject = JSON.parse(fullyEncryptedKey);
         fullyEncryptedKey = await decryptWithPassword(
           encryptedObject.encrypted,
@@ -544,12 +544,13 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
           encryptedObject.iv
         );
       } catch (error) {
-        alert("Invalid password. Unable to decrypt Hongbao.");
+        alert("Invalid password. Unable to decrypt the Hongbao.");
         return;
       }
     }
 
-    // 2) Now we should have the raw BLST ciphertext
+    // 2) Now `fullyEncryptedKey` should be the raw Shutter ciphertext
+    //    (i.e., output from shutterEncryptPrivateKey()).
     const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
     const identityParam = urlParams.get("identity");
     if (!identityParam) {
@@ -559,7 +560,8 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
 
     const finalKey = await getShutterDecryptionKey(identityParam);
 
-    // 3) Locally BLST-decrypt
+    // 3) Locally decrypt the Shutter ciphertext with finalKey (BLST)
+    //    We assume it's always Shutter-encrypted, never a plain PK.
     const decryptedPrivateKey = await shutterDecryptPrivateKey(fullyEncryptedKey, finalKey);
 
     detailsElement.innerHTML += `
@@ -567,9 +569,11 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
       Decryption key: <strong>${decryptedPrivateKey}</strong><br>
       Decryption successful!<br>
     `;
+
+    // Update the UI field to show the final plain PK
     document.getElementById("hongbao-key").value = decryptedPrivateKey;
 
-    // 4) Sweep to passkey wallet
+    // 4) Sweep to the passkey wallet
     const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
     fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
 
@@ -583,6 +587,7 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
     const gasPrice = BigInt(await fallbackWeb3.eth.getGasPrice());
     const gasLimit = BigInt(21000);
     const gasCost = gasPrice * gasLimit;
+
     if (balance <= gasCost) {
       alert("Insufficient funds to cover gas fees.");
       detailsElement.innerHTML += "Insufficient funds to cover gas fees.";
@@ -621,9 +626,7 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
   }
 }
 
-/*************************************************
- * HELPER: Populate fields from URL
- ************************************************/
+
 async function populateFieldsFromHash() {
   const hash = window.location.hash.substring(1);
   const params = new URLSearchParams(hash.split("?")[1]);
@@ -650,10 +653,12 @@ async function populateFieldsFromHash() {
 
     const currentTime = Math.floor(Date.now() / 1000);
     if (currentTime >= parseInt(timestamp, 10)) {
+      // Countdown is already 0 or passed
       document.getElementById("countdown").textContent = "Hongbao is now available!";
       if (claimNewWalletButton) claimNewWalletButton.classList.remove("hidden");
       if (toggleOtherOptionsButton) toggleOtherOptionsButton.classList.remove("hidden");
     } else {
+      // Countdown still active
       startCountdown(parseInt(timestamp, 10));
     }
 
@@ -666,7 +671,7 @@ async function populateFieldsFromHash() {
         throw new Error("No identity found in URL. Cannot check or decrypt Hongbao.");
       }
 
-      // If "pure" Shutter ciphertext
+      // If it's "pure Shutter ciphertext" (starts with 0x03 + length>66), try final decrypt
       if (encryptedKey.startsWith("0x03") && encryptedKey.length > 66) {
         const finalKey = await getShutterDecryptionKey(identityParam);
         const ephemeralPrivateKey = await shutterDecryptPrivateKey(encryptedKey, finalKey);
@@ -676,28 +681,32 @@ async function populateFieldsFromHash() {
 
         await checkHongbaoBalance(hongbaoAccount.address, amount);
       } else {
-        detailsElement.innerHTML = "Shutter ciphertext might be password-protected, or still locked.";
+        // Possibly password-protected or not yet decryptable
+        detailsElement.innerHTML =
+          "Shutter ciphertext might be password-protected, or still locked. If password-protected, enter password below.";
       }
     } catch (error) {
       console.error("Error retrieving or decrypting key with Shutter API:", error);
+
+      // If time not up or no final key, we assume locked
       detailsElement.textContent = "The Hongbao might still be locked or password-protected.";
     }
   } else {
     senderSection.classList.remove("hidden");
   }
 
+  // Handle optional password field
   handlePasswordVisibility();
 }
 
-/*************************************************
- * HELPER: Show/hide password field if needed
- ************************************************/
+
 function handlePasswordVisibility() {
   const hash = window.location.hash.substring(1);
   const params = new URLSearchParams(hash.split("?")[1]);
   const isProtected = params.get("protected") === "true";
 
   const passwordContainer = document.getElementById("password-container");
+
   if (isProtected) {
     passwordContainer.classList.remove("hidden");
   } else {
@@ -705,18 +714,21 @@ function handlePasswordVisibility() {
   }
 }
 
-/*************************************************
- * HELPER: Check ephemeral address balance
- ************************************************/
+
+
+
 async function checkHongbaoBalance(hongbaoAccountAddress, expectedAmount) {
   const detailsElement = document.getElementById("redemption-details");
+
   try {
+    // Use fallbackWeb3 for the balance check
     const balance = BigInt(await fallbackWeb3.eth.getBalance(hongbaoAccountAddress));
+
     if (balance === BigInt(0)) {
       detailsElement.innerHTML = "<strong>Status:</strong> This Hongbao has already been claimed.";
     } else {
       const formattedBalance = fallbackWeb3.utils.fromWei(balance.toString(), "ether");
-      detailsElement.innerHTML = `<strong>Status:</strong> Hongbao available! Balance: ${formattedBalance} XDAI (Expected: ${expectedAmount} XDAI)`;
+      detailsElement.innerHTML = `<strong>Status:</strong> Hongbao available! Current balance: ${formattedBalance} XDAI (Expected: ${expectedAmount} XDAI)`;
     }
   } catch (error) {
     console.error("Error checking Hongbao balance:", error);
@@ -724,23 +736,19 @@ async function checkHongbaoBalance(hongbaoAccountAddress, expectedAmount) {
   }
 }
 
-/*************************************************
- * HELPER: Check if WeChat
- ************************************************/
 function isWeChatBrowser() {
   const ua = navigator.userAgent.toLowerCase();
   return ua.includes("micromessenger");
 }
 
-/*************************************************
- * HELPER: Countdown for locked Hongbao
- ************************************************/
+// Countdown timer
 function startCountdown(timestamp) {
   const countdownElement = document.getElementById("countdown");
   const claimNewWalletButton = document.getElementById("redeem-new-wallet");
   const toggleOtherOptionsButton = document.getElementById("toggle-other-options");
   const otherClaimOptionsDiv = document.getElementById("other-claim-options");
 
+  // Initially hide claim buttons
   if (claimNewWalletButton) claimNewWalletButton.classList.add("hidden");
   if (toggleOtherOptionsButton) toggleOtherOptionsButton.classList.add("hidden");
   if (otherClaimOptionsDiv) otherClaimOptionsDiv.classList.add("hidden");
@@ -751,12 +759,17 @@ function startCountdown(timestamp) {
 
     if (secondsLeft <= 0) {
       clearInterval(interval);
+
+      // Update the countdown text
       countdownElement.textContent = "Hongbao is now available!";
+
+      // Show claim buttons
       if (claimNewWalletButton) claimNewWalletButton.classList.remove("hidden");
       if (toggleOtherOptionsButton) toggleOtherOptionsButton.classList.remove("hidden");
       return;
     }
 
+    // Calculate time remaining
     const hours = Math.floor(secondsLeft / 3600);
     const minutes = Math.floor((secondsLeft % 3600) / 60);
     const seconds = secondsLeft % 60;
@@ -765,20 +778,20 @@ function startCountdown(timestamp) {
   }, 1000);
 }
 
-/*************************************************
- * DOM Loaded: run populateFieldsFromHash + events
- ************************************************/
+
 document.addEventListener('DOMContentLoaded', () => {
+  // Event listeners for sender section
+
   if (isWeChatBrowser()) {
     document.body.innerHTML = `
       <div style="text-align: center; padding: 20px;">
         <h2>Shutterized Hongbao - Unsupported Browser</h2>
-        <p>Open in a real browser. WeChat isn't supported.</p>
+        <p>Please press the 3 dots in the upper right and open it in your browser. Someone has gifted you a shutterized, threshold encrypted Hongbao! But this page works best in a real browser like Chrome or Safari.</p>
       </div>
     `;
   }
 
-  // Switch from "receiver" to "sender"
+
   const createOwnHongbaoButton = document.getElementById('create-own-hongbao');
   if (createOwnHongbaoButton) {
     createOwnHongbaoButton.addEventListener('click', () => {
@@ -788,7 +801,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Create Hongbao w/ MetaMask
   const createHongbaoButton = document.getElementById('create-hongbao');
   if (createHongbaoButton) {
     createHongbaoButton.addEventListener('click', async () => {
@@ -797,7 +809,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Create Hongbao w/ Passkey
   const createHongbaoWithPasskeyButton = document.getElementById('create-hongbao-with-passkey');
   if (createHongbaoWithPasskeyButton) {
     createHongbaoWithPasskeyButton.addEventListener('click', async () => {
@@ -810,7 +821,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Redeem w/ MetaMask
+  // Event listeners for receiver section
   const redeemHongbaoButton = document.getElementById('redeem-hongbao');
   if (redeemHongbaoButton) {
     redeemHongbaoButton.addEventListener('click', () => {
@@ -821,7 +832,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Redeem -> New Passkey
   const redeemNewWalletButton = document.getElementById('redeem-new-wallet');
   if (redeemNewWalletButton) {
     redeemNewWalletButton.addEventListener('click', () => {
@@ -832,7 +842,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Redeem -> Existing Passkey
   const redeemExistingWalletButton = document.getElementById('redeem-existing-wallet');
   if (redeemExistingWalletButton) {
     redeemExistingWalletButton.addEventListener('click', () => {
@@ -843,9 +852,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Toggle other claim options
+
+
+
+  // Toggle Other Claiming Options
   const toggleOtherOptionsButton = document.getElementById("toggle-other-options");
   const otherClaimOptions = document.getElementById("other-claim-options");
+
   toggleOtherOptionsButton.addEventListener("click", () => {
     if (otherClaimOptions.classList.contains("hidden")) {
       otherClaimOptions.classList.remove("hidden");
@@ -856,25 +869,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Decrypt Password Button
+
+
   const decryptPasswordButton = document.getElementById('decrypt-password');
   if (decryptPasswordButton) {
     decryptPasswordButton.addEventListener('click', async () => {
       const encryptedKey = document.getElementById('hongbao-key').value;
       const password = document.getElementById('redeem-password').value.trim();
       const timestamp = parseInt(document.getElementById('hongbao-timestamp').value, 10);
-
+  
       if (!password) {
         alert("Please enter a password.");
         return;
       }
-
+  
       const currentTime = Math.floor(Date.now() / 1000);
       if (currentTime < timestamp) {
-        alert(`The Hongbao is locked until ${new Date(timestamp * 1000).toLocaleString()}.`);
+        alert(`The Hongbao is locked until ${new Date(timestamp * 1000).toLocaleString()}. Please wait until the unlock time.`);
         return;
       }
-
+  
       try {
         const encryptedObject = JSON.parse(encryptedKey);
         const passwordDecryptedKey = await decryptWithPassword(
@@ -882,30 +896,31 @@ document.addEventListener('DOMContentLoaded', () => {
           password,
           encryptedObject.iv
         );
-
+  
         if (!passwordDecryptedKey) {
           throw new Error("Decryption with the provided password failed.");
         }
-
-        // Decrypt w/ Nanoshutter (you can ignore or remove if using local BLST only)
+  
+        // Decrypt with Shutter
         const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
           encrypted_msg: passwordDecryptedKey,
           timestamp,
         });
-
+  
         const finalDecryptedKey = decryptResponse.data.message;
         const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(finalDecryptedKey);
         fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
-
+  
         const amount = document.getElementById("redeem-hongbao").getAttribute("data-amount");
         await checkHongbaoBalance(hongbaoAccount.address, amount);
-
-        // Update the "Encrypted Key" field w/ final PK
+  
+        // Update the "Encrypted Key" field with the decrypted private key
         document.getElementById("hongbao-key").value = finalDecryptedKey;
-
+  
         alert("Successfully decrypted, checked balance, and updated the key!");
       } catch (error) {
         console.error("Error during decryption or balance check:", error);
+  
         if (error.response && error.response.status === 403) {
           alert("The decryption key is not yet available. Please try again after the unlock time.");
         } else {
@@ -914,13 +929,174 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+  
 
-  // Populate from URL
   populateFieldsFromHash();
 });
-
-// Make custom-timestamp visible if user chooses “custom”
 document.getElementById("unlock-time").addEventListener("change", (event) => {
   const customTimestampContainer = document.getElementById("custom-timestamp-container");
   customTimestampContainer.classList.toggle("hidden", event.target.value !== "custom");
 });
+/*********************************************************************
+ * NEW SHUTTER API FUNCTIONS (Gnosis Mainnet)
+ *
+ * These functions help you:
+ *   - Register an identity/time-based trigger (with mainnet registry)
+ *   - Get encryption data (with mainnet registry)
+ *   - Locally encrypt using BLST (encryptDataBlst.js)
+ *   - Retrieve the final decryption key (with mainnet registry)
+ *   - Locally decrypt your private key (BLST-based)
+ *
+ * They call the new Shutter mainnet endpoint:
+ *   https://shutter.api.staging.shutter.network/api
+ *********************************************************************/
+
+/**
+ * Register a Shutter identity with a time-based decryption trigger
+ * on the mainnet registry (0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc).
+ *
+ * @param {number} decryptionTimestamp - Unix timestamp for key release
+ * @param {string} identityPrefixHex   - 32-byte prefix (0x...) for uniqueness
+ * @returns {Promise<Object>}          - { message: { eon, eon_key, identity, ... } }
+ */
+async function registerShutterIdentity(decryptionTimestamp, identityPrefixHex) {
+  try {
+    // Add registry param for mainnet
+    const response = await axios.post(
+      'https://shutter.api.staging.shutter.network/api/register_identity',
+      {
+        decryptionTimestamp,
+        identityPrefix: identityPrefixHex,
+        registry: "0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc",
+      }
+    );
+    console.log('Shutter Identity Registration:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error registering Shutter identity:', error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch encryption info (eon public key, identity, etc.) from Shutter mainnet registry.
+ *
+ * @param {string} userAddress        - (Unused now, we force the mainnet registry address)
+ * @param {string} identityPrefixHex  - The same 32-byte prefix from registration
+ * @returns {Promise<Object>}         - { message: { eon_key, identity, ... } }
+ */
+async function getShutterEncryptionData(userAddress, identityPrefixHex) {
+  try {
+    // Use the mainnet registry forcibly:
+    const url =
+      `https://shutter.api.staging.shutter.network/api/get_data_for_encryption?` +
+      `address=0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc&identityPrefix=${identityPrefixHex}`;
+    const response = await axios.get(url);
+    console.log('Encryption Data:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching Shutter encryption data:', error);
+    throw error;
+  }
+}
+
+/**
+ * Encrypt a private key using BLST-based encryption (encryptDataBlst.js).
+ * Includes debug logs for argument validation.
+ *
+ * @param {string} privateKeyHex  - e.g. "0xabcdef1234..."
+ * @param {Object} encryptionData - from getShutterEncryptionData().message -> { eon_key, identity, ... }
+ * @param {string} [sigmaHex]     - Optional random 32-byte "sigma" in hex
+ * @returns {Promise<string>}     - Hex-encoded ciphertext from BLST
+ */
+async function shutterEncryptPrivateKey(privateKeyHex, encryptionData, sigmaHex) {
+  console.log("=== shutterEncryptPrivateKey Debug ===");
+  console.log("privateKeyHex:", privateKeyHex, "length:", privateKeyHex?.length);
+  console.log(
+    "encryptionData.identity:", encryptionData?.identity,
+    "length:", encryptionData?.identity?.length
+  );
+  console.log(
+    "encryptionData.eon_key:", encryptionData?.eon_key,
+    "length:", encryptionData?.eon_key?.length
+  );
+
+  // If not provided, generate a random 32-byte sigma
+  const randomSigma = sigmaHex || "0x" + crypto
+    .getRandomValues(new Uint8Array(32))
+    .reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '');
+
+  console.log("randomSigma:", randomSigma, "length:", randomSigma.length);
+
+  if (!privateKeyHex || privateKeyHex.length < 66) {
+    console.error("Private key is too short or missing. Must be '0x' + 64 hex chars.");
+  }
+  if (!encryptionData.identity || encryptionData.identity.length < 66) {
+    console.error("encryptionData.identity seems too short or missing.");
+  }
+  if (!encryptionData.eon_key || encryptionData.eon_key.length < 66) {
+    console.error("encryptionData.eon_key seems too short or missing.");
+  }
+
+  try {
+    const ciphertextHex = await window.shutter.encryptData(
+      privateKeyHex,
+      encryptionData.identity,
+      encryptionData.eon_key,
+      randomSigma
+    );
+
+    console.log("Shutter Encrypted PrivateKey (result):", ciphertextHex, "length:", ciphertextHex?.length);
+    return ciphertextHex;
+  } catch (e) {
+    console.error("Error in BLST encryption:", e);
+    throw e;
+  }
+}
+
+/**
+ * Retrieve the final epoch secret key from Shutter after the time lock passes,
+ * on the mainnet registry (0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc).
+ *
+ * @param {string} identityHex - The "identity" returned when registering
+ * @returns {Promise<string>}   - Shutter's final "decryption_key" (0x...)
+ */
+async function getShutterDecryptionKey(identityHex) {
+  try {
+    // Add registry param to ensure mainnet usage
+    const url =
+      `https://shutter.api.staging.shutter.network/api/get_decryption_key?` +
+      `identity=${identityHex}&registry=0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc`;
+    const response = await axios.get(url);
+    console.log('Shutter Decryption Key:', response.data);
+    return response.data.decryption_key;
+  } catch (error) {
+    console.error('Error retrieving Shutter decryption key:', error);
+    throw error;
+  }
+}
+
+/**
+ * Locally decrypt the BLST-encrypted private key using the final epoch secret key.
+ *
+ * @param {string} encryptedHex       - The ciphertext from shutterEncryptPrivateKey()
+ * @param {string} finalDecryptionKey - The epoch secret key from getShutterDecryptionKey()
+ * @returns {Promise<string>}         - The decrypted privateKey (0x...)
+ */
+async function shutterDecryptPrivateKey(encryptedHex, finalDecryptionKey) {
+  try {
+    // Ensure "encryptedHex" is valid BLST ciphertext (post-password decode).
+    if (!encryptedHex || !encryptedHex.startsWith("0x03") || encryptedHex.length < 100) {
+      console.error("shutterDecryptPrivateKey: Not valid BLST ciphertext:", encryptedHex);
+      throw new Error("Expected valid BLST ciphertext (0x03...). Cannot decrypt.");
+    }
+
+    // Call your local BLST decrypt in encryptDataBlst.js
+    const decryptedHex = await window.shutter.decrypt(encryptedHex, finalDecryptionKey);
+    console.log("Locally decrypted BLST private key:", decryptedHex);
+    return decryptedHex;
+  } catch (error) {
+    console.error("Error decrypting private key:", error);
+    throw error;
+  }
+}
