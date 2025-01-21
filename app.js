@@ -954,70 +954,48 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
   
-        // If the Hongbao is time-locked, check if the time has arrived:
         const currentTime = Math.floor(Date.now() / 1000);
         if (currentTime < timestamp) {
-          alert(`The Hongbao is locked until ${new Date(timestamp * 1000).toLocaleString()}. Please wait until the unlock time.`);
+          alert(`The Hongbao is locked until ${new Date(timestamp * 1000).toLocaleString()}.`);
           return;
         }
   
-        // 1) First, decrypt the AES layer with the user's password
-        console.log("Starting local AES decryption with user's password...");
+        // First, decrypt the AES layer with the user's password
         const encryptedObject = JSON.parse(encryptedKeyField);
         const passwordDecryptedCipher = await decryptWithPassword(
           encryptedObject.encrypted,
           password,
           encryptedObject.iv
         );
-        if (!passwordDecryptedCipher) {
-          throw new Error("Decryption with the provided password failed.");
-        }
-        console.log("AES decryption successful. Result is likely Shutter ciphertext:", passwordDecryptedCipher);
   
-        // 2) Retrieve the identity from the URL (to fetch the final Shutter key)
+        if (!passwordDecryptedCipher.startsWith("0x03")) {
+          throw new Error("Decryption failed. Invalid Shutter ciphertext.");
+        }
+  
+        // Retrieve identity from URL to fetch final Shutter decryption key
         const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
         const identityParam = urlParams.get("identity");
         if (!identityParam) {
           alert("Missing Shutter identity. Cannot complete final decryption.");
           return;
         }
-        console.log("Shutter identityParam:", identityParam);
   
-        // 3) Get the final decryption key from Shutter (post-timestamp)
-        //    This uses the new Shutter API with the mainnet registry param
-        console.log("Fetching final epoch secret key from Shutter...");
         const finalKey = await getShutterDecryptionKey(identityParam);
-        console.log("Shutter finalKey:", finalKey);
   
-        // 4) Locally decrypt the Shutter ciphertext with finalKey
-        console.log("Starting local BLST decryption (shutterDecryptPrivateKey)...");
+        // Locally decrypt the Shutter ciphertext with finalKey
         const finalDecryptedKey = await shutterDecryptPrivateKey(passwordDecryptedCipher, finalKey);
-        console.log("BLST decrypted private key:", finalDecryptedKey);
   
-        // 5) (Optional) Check the ephemeral account's balance, etc.
-        const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(finalDecryptedKey);
-        fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
+        // Store decrypted key in a separate field or variable, not overwriting the original
+        document.getElementById("decrypted-hongbao-key").value = finalDecryptedKey;
   
-        const amount = document.getElementById("redeem-hongbao").getAttribute("data-amount");
-        await checkHongbaoBalance(hongbaoAccount.address, amount);
-  
-        // 6) Update the "hongbao-key" field with the final decrypted private key
-        document.getElementById("hongbao-key").value = finalDecryptedKey;
-  
-        alert("Successfully password-decrypted, fetched the Shutter final key, and checked balance!");
+        alert("Successfully decrypted the Hongbao!");
       } catch (error) {
-        console.error("Error during decryption or balance check:", error);
-  
-        // If the final key is not yet available from Shutter, or time not up, show message
-        if (error.response && error.response.status === 403) {
-          alert("The Shutter decryption key is not yet available. Please try again after the unlock time.");
-        } else {
-          alert("Failed to decrypt or check balance. Ensure the password and key are correct.");
-        }
+        console.error("Decryption error:", error);
+        alert("Failed to decrypt the Hongbao. Please ensure the password and key are correct.");
       }
     });
   }
-  
+    
   
 
   populateFieldsFromHash();
