@@ -522,9 +522,9 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
     detailsElement.innerHTML = "Checking for password protection...<br>";
     detailsElement.classList.remove("hidden");
 
-    let fullyEncryptedKey = encryptedKey; // This is never a plain private key.
+    let decryptedPrivateKey;
 
-    // 1) If the link says "protected=true", do password-based AES decryption first
+    // Step 1: Handle password decryption if needed
     const isProtected = new URLSearchParams(window.location.search).get("protected") === "true";
     if (isProtected) {
       const password = document.getElementById("redeem-password").value.trim();
@@ -534,9 +534,8 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
       }
 
       try {
-        // The key is JSON: { encrypted, iv }
-        const encryptedObject = JSON.parse(fullyEncryptedKey);
-        fullyEncryptedKey = await decryptWithPassword(
+        const encryptedObject = JSON.parse(encryptedKey);
+        decryptedPrivateKey = await decryptWithPassword(
           encryptedObject.encrypted,
           password,
           encryptedObject.iv
@@ -545,33 +544,36 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
         alert("Invalid password. Unable to decrypt the Hongbao.");
         return;
       }
+    } else {
+      decryptedPrivateKey = encryptedKey; // Not password-protected
     }
 
-    // 2) Now `fullyEncryptedKey` should be the raw Shutter ciphertext
-    //    (i.e., output from shutterEncryptPrivateKey()).
-    const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
-    const identityParam = urlParams.get("identity");
-    if (!identityParam) {
-      alert("Missing Shutter identity. Cannot complete final decryption.");
-      return;
+    // Step 2: Check if the key is still encrypted with Shutter
+    if (
+      decryptedPrivateKey.startsWith("0x03") && // BLST ciphertext
+      decryptedPrivateKey.length > 66
+    ) {
+      const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
+      const identityParam = urlParams.get("identity");
+      if (!identityParam) {
+        alert("Missing Shutter identity. Cannot complete final decryption.");
+        return;
+      }
+
+      const finalKey = await getShutterDecryptionKey(identityParam);
+
+      // Perform final decryption
+      decryptedPrivateKey = await shutterDecryptPrivateKey(decryptedPrivateKey, finalKey);
+
+      console.log("Final Decrypted Private Key:", decryptedPrivateKey);
     }
 
-    const finalKey = await getShutterDecryptionKey(identityParam);
+    // Step 3: Validate the final key
+    if (!decryptedPrivateKey.startsWith("0x") || decryptedPrivateKey.length !== 66) {
+      throw new Error("Invalid private key after decryption.");
+    }
 
-    // 3) Locally decrypt the Shutter ciphertext with finalKey (BLST)
-    //    We assume it's always Shutter-encrypted, never a plain PK.
-    const decryptedPrivateKey = await shutterDecryptPrivateKey(fullyEncryptedKey, finalKey);
-
-    detailsElement.innerHTML += `
-      Shutter Keypers generated the decryption key.<br>
-      Decryption key: <strong>${decryptedPrivateKey}</strong><br>
-      Decryption successful!<br>
-    `;
-
-    // Update the UI field to show the final plain PK
-    document.getElementById("hongbao-key").value = decryptedPrivateKey;
-
-    // 4) Sweep to the passkey wallet
+    // Step 4: Sweep funds to the wallet
     const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
     fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
 
@@ -623,6 +625,7 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
     alert("Failed to redeem Hongbao with the specified wallet.");
   }
 }
+
 
 async function populateFieldsFromHash() {
   console.log("=== populateFieldsFromHash: Start ===");
