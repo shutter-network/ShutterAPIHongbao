@@ -937,15 +937,14 @@ document.getElementById("unlock-time").addEventListener("change", (event) => {
   const customTimestampContainer = document.getElementById("custom-timestamp-container");
   customTimestampContainer.classList.toggle("hidden", event.target.value !== "custom");
 });
-
 /*********************************************************************
  * NEW SHUTTER API FUNCTIONS (Gnosis Mainnet)
  *
  * These functions help you:
- *   - Register an identity/time-based trigger
- *   - Get encryption data (eon key, etc.)
+ *   - Register an identity/time-based trigger (with mainnet registry)
+ *   - Get encryption data (with mainnet registry)
  *   - Locally encrypt using BLST (encryptDataBlst.js)
- *   - Retrieve the final decryption key
+ *   - Retrieve the final decryption key (with mainnet registry)
  *   - Locally decrypt your private key (BLST-based)
  *
  * They call the new Shutter mainnet endpoint:
@@ -953,7 +952,8 @@ document.getElementById("unlock-time").addEventListener("change", (event) => {
  *********************************************************************/
 
 /**
- * Register a Shutter identity with a time-based decryption trigger on the mainnet registry.
+ * Register a Shutter identity with a time-based decryption trigger
+ * on the mainnet registry (0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc).
  *
  * @param {number} decryptionTimestamp - Unix timestamp for key release
  * @param {string} identityPrefixHex   - 32-byte prefix (0x...) for uniqueness
@@ -961,13 +961,13 @@ document.getElementById("unlock-time").addEventListener("change", (event) => {
  */
 async function registerShutterIdentity(decryptionTimestamp, identityPrefixHex) {
   try {
-    // Add "registry: 0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc" to direct the Shutter API to the mainnet registry
+    // Add registry param for mainnet
     const response = await axios.post(
       'https://shutter.api.staging.shutter.network/api/register_identity',
       {
         decryptionTimestamp,
-        identityPrefix: identityPrefixHex
-      
+        identityPrefix: identityPrefixHex,
+        registry: "0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc",
       }
     );
     console.log('Shutter Identity Registration:', response.data);
@@ -981,16 +981,16 @@ async function registerShutterIdentity(decryptionTimestamp, identityPrefixHex) {
 /**
  * Fetch encryption info (eon public key, identity, etc.) from Shutter mainnet registry.
  *
- * @param {string} userAddress        - (Unused now, we force the registry address)
+ * @param {string} userAddress        - (Unused now, we force the mainnet registry address)
  * @param {string} identityPrefixHex  - The same 32-byte prefix from registration
  * @returns {Promise<Object>}         - { message: { eon_key, identity, ... } }
  */
 async function getShutterEncryptionData(userAddress, identityPrefixHex) {
   try {
-    // Force the registry address instead of userAddress:
-    // Shutter uses the "address" param to find the correct registry identity
-    const url = `https://shutter.api.staging.shutter.network/api/get_data_for_encryption?address=0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc&identityPrefix=${identityPrefixHex}`;
-
+    // Use the mainnet registry forcibly:
+    const url =
+      `https://shutter.api.staging.shutter.network/api/get_data_for_encryption?` +
+      `address=0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc&identityPrefix=${identityPrefixHex}`;
     const response = await axios.get(url);
     console.log('Encryption Data:', response.data);
     return response.data;
@@ -1000,23 +1000,26 @@ async function getShutterEncryptionData(userAddress, identityPrefixHex) {
   }
 }
 
-
 /**
  * Encrypt a private key using BLST-based encryption (encryptDataBlst.js).
+ * Includes debug logs for argument validation.
  *
  * @param {string} privateKeyHex  - e.g. "0xabcdef1234..."
  * @param {Object} encryptionData - from getShutterEncryptionData().message -> { eon_key, identity, ... }
  * @param {string} [sigmaHex]     - Optional random 32-byte "sigma" in hex
  * @returns {Promise<string>}     - Hex-encoded ciphertext from BLST
  */
-
-
 async function shutterEncryptPrivateKey(privateKeyHex, encryptionData, sigmaHex) {
-  // Debug: log the arguments we’re about to use
   console.log("=== shutterEncryptPrivateKey Debug ===");
   console.log("privateKeyHex:", privateKeyHex, "length:", privateKeyHex?.length);
-  console.log("encryptionData.identity:", encryptionData?.identity, "length:", encryptionData?.identity?.length);
-  console.log("encryptionData.eon_key:", encryptionData?.eon_key, "length:", encryptionData?.eon_key?.length);
+  console.log(
+    "encryptionData.identity:", encryptionData?.identity,
+    "length:", encryptionData?.identity?.length
+  );
+  console.log(
+    "encryptionData.eon_key:", encryptionData?.eon_key,
+    "length:", encryptionData?.eon_key?.length
+  );
 
   // If not provided, generate a random 32-byte sigma
   const randomSigma = sigmaHex || "0x" + crypto
@@ -1025,7 +1028,6 @@ async function shutterEncryptPrivateKey(privateKeyHex, encryptionData, sigmaHex)
 
   console.log("randomSigma:", randomSigma, "length:", randomSigma.length);
 
-  // Just to catch obvious mistakes:
   if (!privateKeyHex || privateKeyHex.length < 66) {
     console.error("Private key is too short or missing. Must be '0x' + 64 hex chars.");
   }
@@ -1036,7 +1038,6 @@ async function shutterEncryptPrivateKey(privateKeyHex, encryptionData, sigmaHex)
     console.error("encryptionData.eon_key seems too short or missing.");
   }
 
-  // Call the actual BLST encryption
   try {
     const ciphertextHex = await window.shutter.encryptData(
       privateKeyHex,
@@ -1054,14 +1055,18 @@ async function shutterEncryptPrivateKey(privateKeyHex, encryptionData, sigmaHex)
 }
 
 /**
- * Retrieve the final epoch secret key from Shutter after the time lock passes.
+ * Retrieve the final epoch secret key from Shutter after the time lock passes,
+ * on the mainnet registry (0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc).
  *
  * @param {string} identityHex - The "identity" returned when registering
  * @returns {Promise<string>}   - Shutter's final "decryption_key" (0x...)
  */
 async function getShutterDecryptionKey(identityHex) {
   try {
-    const url = `https://shutter.api.staging.shutter.network/api/get_decryption_key?identity=${identityHex}`;
+    // Add registry param to ensure mainnet usage
+    const url =
+      `https://shutter.api.staging.shutter.network/api/get_decryption_key?` +
+      `identity=${identityHex}&registry=0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc`;
     const response = await axios.get(url);
     console.log('Shutter Decryption Key:', response.data);
     return response.data.decryption_key;
@@ -1074,13 +1079,6 @@ async function getShutterDecryptionKey(identityHex) {
 /**
  * Locally decrypt the BLST-encrypted private key using the final epoch secret key.
  *
- * @param {string} encryptedHex       - The ciphertext produced by shutterEncryptPrivateKey()
- * @param {string} finalDecryptionKey - The epoch secret key from getShutterDecryptionKey()
- * @returns {Promise<string>}         - The decrypted privateKey (0x...)
- */
-/**
- * Locally decrypt the BLST-encrypted private key using the final epoch secret key.
- *
  * @param {string} encryptedHex       - The ciphertext from shutterEncryptPrivateKey()
  * @param {string} finalDecryptionKey - The epoch secret key from getShutterDecryptionKey()
  * @returns {Promise<string>}         - The decrypted privateKey (0x...)
@@ -1088,17 +1086,12 @@ async function getShutterDecryptionKey(identityHex) {
 async function shutterDecryptPrivateKey(encryptedHex, finalDecryptionKey) {
   try {
     // Ensure "encryptedHex" is valid BLST ciphertext (post-password decode).
-    // Typically starts "0x03" and length ~130+ hex chars.
-    if (
-      !encryptedHex ||
-      !encryptedHex.startsWith("0x03") ||
-      encryptedHex.length < 100
-    ) {
+    if (!encryptedHex || !encryptedHex.startsWith("0x03") || encryptedHex.length < 100) {
       console.error("shutterDecryptPrivateKey: Not valid BLST ciphertext:", encryptedHex);
       throw new Error("Expected valid BLST ciphertext (0x03...). Cannot decrypt.");
     }
 
-    // Now call your local decrypt function in encryptDataBlst.js
+    // Call your local BLST decrypt in encryptDataBlst.js
     const decryptedHex = await window.shutter.decrypt(encryptedHex, finalDecryptionKey);
     console.log("Locally decrypted BLST private key:", decryptedHex);
     return decryptedHex;
@@ -1107,4 +1100,3 @@ async function shutterDecryptPrivateKey(encryptedHex, finalDecryptionKey) {
     throw error;
   }
 }
-
