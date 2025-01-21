@@ -175,7 +175,7 @@ function padAndSplit(bytes) {
 }
 function unpad(bytes) {
     const paddingLength = bytes.at(-1);
-    if (paddingLength == undefined || paddingLength == 0 || paddingLength > 31) {
+    if (paddingLength == undefined || paddingLength == 0 || paddingLength > 32) {
         throw `Invalid padding length (probably): ${paddingLength}`;
     }
     return bytes.slice(0, bytes.length - paddingLength);
