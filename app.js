@@ -526,12 +526,13 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
 
     let decryptedKey = encryptedKey;
 
-    // 1) If user typed a fully decrypted private key
+    // 1) If user manually typed a fully decrypted private key (0x + 64 hex)
     const keyField = document.getElementById("hongbao-key").value;
     if (keyField.startsWith("0x") && keyField.length === 66) {
+      // Already a normal private key
       decryptedKey = keyField;
     } else {
-      // 2) If password-protected, do password-based decryption first
+      // 2) If password-protected, do password-based AES decryption first
       const isProtected = new URLSearchParams(window.location.search).get("protected") === "true";
       if (isProtected) {
         const password = document.getElementById("redeem-password").value.trim();
@@ -552,12 +553,9 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
         }
       }
 
-      // 3) If it still looks like BLST ciphertext (starts with 0x03 & longer than 66), do local decrypt
-      if (
-        decryptedKey.startsWith("0x03") &&
-        decryptedKey.length > 66
-      ) {
-        console.log(decryptedKey)
+      // 3) If it still looks like BLST ciphertext, run local Shutter decrypt
+      //    Shutter ciphertext generally starts with "0x03" and is longer than 66 chars
+      if (decryptedKey.startsWith("0x03") && decryptedKey.length > 66) {
         const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
         const identityParam = urlParams.get("identity");
         if (!identityParam) {
@@ -566,6 +564,8 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
         }
 
         const finalKey = await getShutterDecryptionKey(identityParam);
+
+        // Decrypt the BLST ciphertext
         decryptedKey = await shutterDecryptPrivateKey(decryptedKey, finalKey);
 
         detailsElement.innerHTML += `
@@ -632,7 +632,6 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
 }
 
 
-
 async function populateFieldsFromHash() {
   const hash = window.location.hash.substring(1);
   const params = new URLSearchParams(hash.split("?")[1]);
@@ -659,12 +658,12 @@ async function populateFieldsFromHash() {
 
     const currentTime = Math.floor(Date.now() / 1000);
     if (currentTime >= parseInt(timestamp, 10)) {
-      // Countdown is already 0 or passed; show the buttons
+      // Countdown is already 0 or passed
       document.getElementById("countdown").textContent = "Hongbao is now available!";
       if (claimNewWalletButton) claimNewWalletButton.classList.remove("hidden");
       if (toggleOtherOptionsButton) toggleOtherOptionsButton.classList.remove("hidden");
     } else {
-      // Countdown still active; start the timer
+      // Countdown still active
       startCountdown(parseInt(timestamp, 10));
     }
 
@@ -672,39 +671,38 @@ async function populateFieldsFromHash() {
     detailsElement.classList.remove("hidden");
 
     try {
-      // Attempt to retrieve final decryption key from Shutter if the time has passed
       const identityParam = params.get("identity");
       if (!identityParam) {
-        throw new Error("No identity found in URL. Unable to check or decrypt Hongbao.");
+        throw new Error("No identity found in URL. Cannot check or decrypt Hongbao.");
       }
 
-      // If Shutter says the key isn't available yet, we'll catch an error
-      const finalKey = await getShutterDecryptionKey(identityParam);
+      // If it's "pure Shutter ciphertext" (starts with 0x03 + length>66), try final decrypt
+      if (encryptedKey.startsWith("0x03") && encryptedKey.length > 66) {
+        const finalKey = await getShutterDecryptionKey(identityParam);
+        const ephemeralPrivateKey = await shutterDecryptPrivateKey(encryptedKey, finalKey);
 
-      // Locally decrypt the ephemeral private key with finalKey
-      const ephemeralPrivateKey = await shutterDecryptPrivateKey(encryptedKey, finalKey);
+        const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(ephemeralPrivateKey);
+        fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
 
-      // Create ephemeral account from decrypted key
-      const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(ephemeralPrivateKey);
-      fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
-
-      // Now check balance to display Hongbao status
-      await checkHongbaoBalance(hongbaoAccount.address, amount);
+        await checkHongbaoBalance(hongbaoAccount.address, amount);
+      } else {
+        // Possibly password-protected or not yet decryptable
+        detailsElement.innerHTML =
+          "Shutter ciphertext might be password-protected, or still locked. If password-protected, enter password below.";
+      }
     } catch (error) {
       console.error("Error retrieving or decrypting key with Shutter API:", error);
 
-      // If decryption key is not yet available, we assume it's still locked
-      detailsElement.textContent = "The Hongbao might still be locked or unavailable yet.";
+      // If time not up or no final key, we assume locked
+      detailsElement.textContent = "The Hongbao might still be locked or password-protected.";
     }
   } else {
-    // If no required params, show the sender section
     senderSection.classList.remove("hidden");
   }
 
-  // Show or hide password field if needed
+  // Handle optional password field
   handlePasswordVisibility();
 }
-
 
 
 function handlePasswordVisibility() {
