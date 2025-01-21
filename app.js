@@ -1003,22 +1003,48 @@ async function getShutterEncryptionData(userAddress, identityPrefixHex) {
  * @param {string} [sigmaHex]     - Optional random 32-byte "sigma" in hex
  * @returns {Promise<string>}     - Hex-encoded ciphertext from BLST
  */
+
+
 async function shutterEncryptPrivateKey(privateKeyHex, encryptionData, sigmaHex) {
-  // If not provided, generate a random 32-byte sigma.
+  // Debug: log the arguments we’re about to use
+  console.log("=== shutterEncryptPrivateKey Debug ===");
+  console.log("privateKeyHex:", privateKeyHex, "length:", privateKeyHex?.length);
+  console.log("encryptionData.identity:", encryptionData?.identity, "length:", encryptionData?.identity?.length);
+  console.log("encryptionData.eon_key:", encryptionData?.eon_key, "length:", encryptionData?.eon_key?.length);
+
+  // If not provided, generate a random 32-byte sigma
   const randomSigma = sigmaHex || "0x" + crypto
     .getRandomValues(new Uint8Array(32))
     .reduce((acc, byte) => acc + byte.toString(16).padStart(2, '0'), '');
 
-  // The encryptData() function is exposed by encryptDataBlst.js as window.shutter.encryptData
-  const ciphertextHex = await window.shutter.encryptData(
-    privateKeyHex,
-    encryptionData.identity, // identityPreimageHex
-    encryptionData.eon_key,  // eonKeyHex
-    randomSigma
-  );
+  console.log("randomSigma:", randomSigma, "length:", randomSigma.length);
 
-  console.log('Shutter Encrypted PrivateKey:', ciphertextHex);
-  return ciphertextHex;
+  // Just to catch obvious mistakes:
+  if (!privateKeyHex || privateKeyHex.length < 66) {
+    console.error("Private key is too short or missing. Must be '0x' + 64 hex chars.");
+  }
+  if (!encryptionData.identity || encryptionData.identity.length < 66) {
+    console.error("encryptionData.identity seems too short or missing.");
+  }
+  if (!encryptionData.eon_key || encryptionData.eon_key.length < 66) {
+    console.error("encryptionData.eon_key seems too short or missing.");
+  }
+
+  // Call the actual BLST encryption
+  try {
+    const ciphertextHex = await window.shutter.encryptData(
+      privateKeyHex,
+      encryptionData.identity,
+      encryptionData.eon_key,
+      randomSigma
+    );
+
+    console.log("Shutter Encrypted PrivateKey (result):", ciphertextHex, "length:", ciphertextHex?.length);
+    return ciphertextHex;
+  } catch (e) {
+    console.error("Error in BLST encryption:", e);
+    throw e;
+  }
 }
 
 /**
