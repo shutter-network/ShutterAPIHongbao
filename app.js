@@ -628,7 +628,7 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
 
 async function populateFieldsFromHash() {
   console.log("=== populateFieldsFromHash: Start ===");
-
+  handlePasswordVisibility();
   const hash = window.location.hash.substring(1);
   console.log("hash:", hash);
 
@@ -760,7 +760,7 @@ async function populateFieldsFromHash() {
   }
 
   // Always handle optional password field
-  handlePasswordVisibility();
+  
   console.log("=== populateFieldsFromHash: End ===");
 }
 
