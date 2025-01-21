@@ -671,28 +671,39 @@ async function populateFieldsFromHash() {
     detailsElement.classList.remove("hidden");
 
     try {
-      const decryptResponse = await axios.post(`${NANOSHUTTER_API_BASE}/decrypt/with_time`, {
-        encrypted_msg: encryptedKey,
-        timestamp: parseInt(timestamp, 10),
-      });
+      // Attempt to retrieve final decryption key from Shutter if the time has passed
+      const identityParam = params.get("identity");
+      if (!identityParam) {
+        throw new Error("No identity found in URL. Unable to check or decrypt Hongbao.");
+      }
 
-      const decryptedPrivateKey = decryptResponse.data.message;
+      // If Shutter says the key isn't available yet, we'll catch an error
+      const finalKey = await getShutterDecryptionKey(identityParam);
 
-      const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(decryptedPrivateKey);
+      // Locally decrypt the ephemeral private key with finalKey
+      const ephemeralPrivateKey = await shutterDecryptPrivateKey(encryptedKey, finalKey);
+
+      // Create ephemeral account from decrypted key
+      const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(ephemeralPrivateKey);
       fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
 
+      // Now check balance to display Hongbao status
       await checkHongbaoBalance(hongbaoAccount.address, amount);
     } catch (error) {
-      console.error("Error retrieving decryption key:", error);
-      detailsElement.textContent = "Error retrieving decryption key. The Hongbao might still be locked.";
+      console.error("Error retrieving or decrypting key with Shutter API:", error);
+
+      // If decryption key is not yet available, we assume it's still locked
+      detailsElement.textContent = "The Hongbao might still be locked or unavailable yet.";
     }
   } else {
+    // If no required params, show the sender section
     senderSection.classList.remove("hidden");
   }
 
-  // Call the new function to handle password visibility
+  // Show or hide password field if needed
   handlePasswordVisibility();
 }
+
 
 
 function handlePasswordVisibility() {
