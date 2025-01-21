@@ -1,6 +1,7 @@
 import { hexToBytes, keccak256, bytesToBigInt, bytesToHex, numberToBytes } from 'https://esm.sh/viem';
 import pkg from 'https://esm.sh/lodash';
 import { Buffer } from 'https://esm.sh/buffer';
+
 const { zip } = pkg;
 const blsSubgroupOrderBytes = [
     0x73, 0xed, 0xa7, 0x53, 0x29, 0x9d, 0x7d, 0x48, 0x33, 0x39, 0xd8, 0x08, 0x09, 0xa1, 0xd8, 0x05,
@@ -51,6 +52,38 @@ export function encodeEncryptedMessage(encryptedMessage) {
         bytes.set(block, offset);
     });
     return bytesToHex(bytes);
+}
+export function decodeEncryptedMessage(encryptedMessage) {
+    const blst = window.blst;
+    const bytes = hexToBytes(encryptedMessage);
+    if (bytes[0] !== 0x3) {
+        throw "Invalid version";
+    }
+    const c1 = new blst.P2_Affine(bytes.slice(1, 96 + 1));
+    const c2 = bytes.slice(96 + 1, 96 + 1 + 32);
+    const c3 = bytes.slice(96 + 1 + 32);
+    return {
+        VersionId: 0x3,
+        c1: c1,
+        c2: c2,
+        c3: c3,
+    };
+}
+export async function decrypt(encryptedMessageHex, epochSecretKeyHex) {
+    const blst = window.blst;
+    const decodedMessage = decodeEncryptedMessage(encryptedMessageHex);
+    const p = new blst.PT(decodedMessage.c1, new blst.P1_Affine(hexToBytes(epochSecretKeyHex)));
+    const key = hash2(p);
+    const sigma = xorBlocks(decodedMessage.c2, key);
+    const blockCount = decodedMessage.c3.length / 32;
+    const decryptedBlocks = new Uint8Array(decodedMessage.c3.length);
+    const keys = computeBlockKeys(sigma, blockCount);
+    for (let i = 0; i < blockCount; i++) {
+        const block = decodedMessage.c3.slice(i * 32, (i + 1) * 32);
+        const decryptedBlock = xorBlocks(block, keys[i]);
+        decryptedBlocks.set(decryptedBlock, i * 32);
+    }
+    return bytesToHex(unpad(decryptedBlocks));
 }
 //======================================
 function computeR(sigmaHex, msgHex) {
@@ -139,6 +172,13 @@ function padAndSplit(bytes) {
         result.push(padded.slice(i, i + blockSize));
     }
     return result;
+}
+function unpad(bytes) {
+    const paddingLength = bytes.at(-1);
+    if (paddingLength == undefined || paddingLength == 0 || paddingLength > 31) {
+        throw `Invalid padding length (probably): ${paddingLength}`;
+    }
+    return bytes.slice(0, bytes.length - paddingLength);
 }
 async function GTExp(x, exp) {
     const blst = window.blst;
