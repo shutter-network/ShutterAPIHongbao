@@ -222,7 +222,7 @@ async function sendHongbao(amount) {
     }
 
     // 5) Construct the link
-    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(
+    const link = `${window.location.origin}/ShutterAPIHongbao/#redeem?key=${encodeURIComponent(
       shutterEncryptedKey
     )}&timestamp=${releaseTimestamp}&amount=${amount}&protected=${!!password}&identity=${finalIdentity}`;
 
@@ -299,7 +299,7 @@ async function fundHongbaoWithPasskey(amount) {
       shutterEncryptedKey = JSON.stringify(passwordEncrypted);
     }
 
-    const link = `${window.location.origin}/ShutterHongbao/#redeem?key=${encodeURIComponent(
+    const link = `${window.location.origin}/ShutterAPIHongbao/#redeem?key=${encodeURIComponent(
       shutterEncryptedKey
     )}&timestamp=${releaseTimestamp}&amount=${amount}&protected=${!!password}&identity=${finalIdentity}`;
 
@@ -353,7 +353,6 @@ async function fundHongbaoWithPasskey(amount) {
     alert("Failed to fund Hongbao with Passkey Wallet.");
   }
 }
-
 async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
   try {
     await ensureGnosisChain();
@@ -399,26 +398,32 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
         }
       }
 
-      // 3) Now use the local BLST approach to finalize decryption
-      const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
-      const identityParam = urlParams.get("identity");
-      if (!identityParam) {
-        alert("Missing Shutter identity. Cannot complete final decryption.");
-        return;
+      // 3) Check if we still have BLST ciphertext (e.g., starts with "0x03").
+      //    If it's clearly a normal private key already (66 chars), skip local BLST.
+      if (
+        decryptedKey.startsWith("0x03") && // BLST version byte
+        decryptedKey.length > 66           // Enough length to be ciphertext
+      ) {
+        const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
+        const identityParam = urlParams.get("identity");
+        if (!identityParam) {
+          alert("Missing Shutter identity. Cannot complete final decryption.");
+          return;
+        }
+
+        const finalKey = await getShutterDecryptionKey(identityParam);
+
+        // Locally decrypt the BLST ciphertext with finalKey
+        decryptedKey = await shutterDecryptPrivateKey(decryptedKey, finalKey);
+
+        detailsElement.innerHTML += `
+          Shutter Keypers generated the decryption key.<br>
+          Decryption key: <strong>${decryptedKey}</strong><br>
+          Decryption successful!<br>
+        `;
+
+        document.getElementById("hongbao-key").value = decryptedKey;
       }
-
-      const finalKey = await getShutterDecryptionKey(identityParam);
-
-      // Locally decrypt the BLST ciphertext with finalKey
-      decryptedKey = await shutterDecryptPrivateKey(decryptedKey, finalKey);
-
-      detailsElement.innerHTML += `
-        Shutter Keypers generated the decryption key.<br>
-        Decryption key: <strong>${decryptedKey}</strong><br>
-        Decryption successful!<br>
-      `;
-
-      document.getElementById("hongbao-key").value = decryptedKey;
     }
 
     // 4) Use the fully decrypted key to sweep the funds
@@ -521,7 +526,7 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
 
     let decryptedKey = encryptedKey;
 
-    // 1) If user typed a raw privateKey
+    // 1) If user typed a fully decrypted private key
     const keyField = document.getElementById("hongbao-key").value;
     if (keyField.startsWith("0x") && keyField.length === 66) {
       decryptedKey = keyField;
@@ -547,24 +552,29 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
         }
       }
 
-      // 3) Locally decrypt the BLST ciphertext using Shutter final key
-      const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
-      const identityParam = urlParams.get("identity");
-      if (!identityParam) {
-        alert("Missing Shutter identity. Cannot complete final decryption.");
-        return;
+      // 3) If it still looks like BLST ciphertext (starts with 0x03 & longer than 66), do local decrypt
+      if (
+        decryptedKey.startsWith("0x03") &&
+        decryptedKey.length > 66
+      ) {
+        const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
+        const identityParam = urlParams.get("identity");
+        if (!identityParam) {
+          alert("Missing Shutter identity. Cannot complete final decryption.");
+          return;
+        }
+
+        const finalKey = await getShutterDecryptionKey(identityParam);
+        decryptedKey = await shutterDecryptPrivateKey(decryptedKey, finalKey);
+
+        detailsElement.innerHTML += `
+          Shutter Keypers generated the decryption key.<br>
+          Decryption key: <strong>${decryptedKey}</strong><br>
+          Decryption successful!<br>
+        `;
+
+        document.getElementById("hongbao-key").value = decryptedKey;
       }
-
-      const finalKey = await getShutterDecryptionKey(identityParam);
-      decryptedKey = await shutterDecryptPrivateKey(decryptedKey, finalKey);
-
-      detailsElement.innerHTML += `
-        Shutter Keypers generated the decryption key.<br>
-        Decryption key: <strong>${decryptedKey}</strong><br>
-        Decryption successful!<br>
-      `;
-
-      document.getElementById("hongbao-key").value = decryptedKey;
     }
 
     // 4) Sweep to the passkey wallet
@@ -619,7 +629,6 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
     alert("Failed to redeem Hongbao with the specified wallet.");
   }
 }
-
 
 
 
