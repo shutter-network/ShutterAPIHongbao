@@ -641,24 +641,27 @@ async function populateFieldsFromHash() {
   const claimNewWalletButton = document.getElementById("redeem-new-wallet");
   const toggleOtherOptionsButton = document.getElementById("toggle-other-options");
 
+  // Hide sender & receiver sections by default
   senderSection.classList.add("hidden");
   receiverSection.classList.add("hidden");
 
+  // If we have valid link params
   if (encryptedKey && timestamp && amount) {
+    // Show the receiver section
     receiverSection.classList.remove("hidden");
     document.getElementById("hongbao-key").value = encryptedKey;
     document.getElementById("hongbao-timestamp").value = timestamp;
     document.getElementById("redeem-hongbao").setAttribute("data-amount", amount);
     hongbaoVisual.classList.remove("hidden");
 
+    // If time is up, let user redeem
     const currentTime = Math.floor(Date.now() / 1000);
     if (currentTime >= parseInt(timestamp, 10)) {
-      // Countdown is already 0 or passed
       document.getElementById("countdown").textContent = "Hongbao is now available!";
       if (claimNewWalletButton) claimNewWalletButton.classList.remove("hidden");
       if (toggleOtherOptionsButton) toggleOtherOptionsButton.classList.remove("hidden");
     } else {
-      // Countdown still active
+      // Otherwise show countdown
       startCountdown(parseInt(timestamp, 10));
     }
 
@@ -666,38 +669,69 @@ async function populateFieldsFromHash() {
     detailsElement.classList.remove("hidden");
 
     try {
+      // Check identity param
       const identityParam = params.get("identity");
       if (!identityParam) {
         throw new Error("No identity found in URL. Cannot check or decrypt Hongbao.");
       }
 
-      // If it's "pure Shutter ciphertext" (starts with 0x03 + length>66), try final decrypt
-      if (encryptedKey.startsWith("0x03") && encryptedKey.length > 66) {
-        const finalKey = await getShutterDecryptionKey(identityParam);
-        const ephemeralPrivateKey = await shutterDecryptPrivateKey(encryptedKey, finalKey);
+      // 1) Check if link says protected=true, do password-based AES decryption first
+      let possiblyShutterCipher = encryptedKey; // local copy
+      const isProtected = params.get("protected") === "true";
+      if (isProtected) {
+        // Prompt user for password in the UI
+        const passwordInput = document.getElementById("redeem-password");
+        if (!passwordInput || !passwordInput.value.trim()) {
+          // If user hasn't entered password yet, just show a note
+          detailsElement.innerHTML = "This Hongbao is password-protected. Enter password to decrypt.";
+          return;
+        }
+        const password = passwordInput.value.trim();
 
+        try {
+          const encryptedObject = JSON.parse(possiblyShutterCipher);
+          possiblyShutterCipher = await decryptWithPassword(
+            encryptedObject.encrypted,
+            password,
+            encryptedObject.iv
+          );
+        } catch (err) {
+          console.error("Password decryption failed:", err);
+          detailsElement.innerHTML = "Invalid password. Unable to decrypt the Hongbao.";
+          return;
+        }
+      }
+
+      // 2) If after password decryption it looks like a Shutter cipher (0x03...), try Shutter decryption
+      if (possiblyShutterCipher.startsWith("0x03") && possiblyShutterCipher.length > 66) {
+        const finalKey = await getShutterDecryptionKey(identityParam);
+        const ephemeralPrivateKey = await shutterDecryptPrivateKey(possiblyShutterCipher, finalKey);
+
+        // Check ephemeral account balance
         const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(ephemeralPrivateKey);
         fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
 
         await checkHongbaoBalance(hongbaoAccount.address, amount);
       } else {
-        // Possibly password-protected or not yet decryptable
-        detailsElement.innerHTML =
-          "Shutter ciphertext might be password-protected, or still locked. If password-protected, enter password below.";
+        // Possibly locked, or the user needs to enter password
+        detailsElement.innerHTML = `
+          The Hongbao might still be locked, or is password-protected.<br>
+          If password-protected, enter your password and try again.
+        `;
       }
     } catch (error) {
       console.error("Error retrieving or decrypting key with Shutter API:", error);
-
-      // If time not up or no final key, we assume locked
       detailsElement.textContent = "The Hongbao might still be locked or password-protected.";
     }
   } else {
+    // If missing param, show sender section
     senderSection.classList.remove("hidden");
   }
 
-  // Handle optional password field
+  // Handle optional password field visibility
   handlePasswordVisibility();
 }
+
 
 
 function handlePasswordVisibility() {
