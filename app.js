@@ -557,6 +557,7 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
         decryptedKey.startsWith("0x03") &&
         decryptedKey.length > 66
       ) {
+        console.log(decryptedKey)
         const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
         const identityParam = urlParams.get("identity");
         if (!identityParam) {
