@@ -1046,22 +1046,33 @@ async function getShutterDecryptionKey(identityHex) {
  * @param {string} finalDecryptionKey - The epoch secret key from getShutterDecryptionKey()
  * @returns {Promise<string>}         - The decrypted privateKey (0x...)
  */
+/**
+ * Locally decrypt the BLST-encrypted private key using the final epoch secret key.
+ *
+ * @param {string} encryptedHex       - The ciphertext from shutterEncryptPrivateKey()
+ * @param {string} finalDecryptionKey - The epoch secret key from getShutterDecryptionKey()
+ * @returns {Promise<string>}         - The decrypted privateKey (0x...)
+ */
 async function shutterDecryptPrivateKey(encryptedHex, finalDecryptionKey) {
   try {
-    // NEW: Quick check to ensure we have valid-looking BLST ciphertext:
-    // Typically starts with "0x03" and is at least ~130+ hex chars.
-    // (The exact length can vary, but definitely more than 66.)
-    if (!encryptedHex || !encryptedHex.startsWith("0x03") || encryptedHex.length < 100) {
-      console.error("shutterDecryptPrivateKey: invalid or non-BLST ciphertext:", encryptedHex);
-      throw new Error("Not a valid BLST ciphertext. Aborting local BLST decrypt.");
+    // Ensure "encryptedHex" is valid BLST ciphertext (post-password decode).
+    // Typically starts "0x03" and length ~130+ hex chars.
+    if (
+      !encryptedHex ||
+      !encryptedHex.startsWith("0x03") ||
+      encryptedHex.length < 100
+    ) {
+      console.error("shutterDecryptPrivateKey: Not valid BLST ciphertext:", encryptedHex);
+      throw new Error("Expected valid BLST ciphertext (0x03...). Cannot decrypt.");
     }
 
-    // Now call your local decrypt function
+    // Now call your local decrypt function in encryptDataBlst.js
     const decryptedHex = await window.shutter.decrypt(encryptedHex, finalDecryptionKey);
-    console.log('Locally decrypted BLST private key:', decryptedHex);
+    console.log("Locally decrypted BLST private key:", decryptedHex);
     return decryptedHex;
   } catch (error) {
-    console.error('Error decrypting private key:', error);
+    console.error("Error decrypting private key:", error);
     throw error;
   }
 }
+
