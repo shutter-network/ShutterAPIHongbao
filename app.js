@@ -1,8 +1,6 @@
 import { registerPasskey } from "./wallet.js";
 import { authenticateWallet } from "./wallet.js";
 
-const NANOSHUTTER_API_BASE = 'https://nanoshutter.staging.shutter.network';
-
 const GNOSIS_CHAIN_PARAMS = {
   chainId: '0x64', // Chain ID 100 in hexadecimal
   chainName: 'Gnosis Chain',
@@ -940,11 +938,11 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
-
   const decryptPasswordButton = document.getElementById('decrypt-password');
   if (decryptPasswordButton) {
     decryptPasswordButton.addEventListener('click', async () => {
       try {
+        // Step 1: Get encrypted key, password, and timestamp
         const encryptedKeyField = document.getElementById('hongbao-key').value;
         const password = document.getElementById('redeem-password').value.trim();
         const timestamp = parseInt(document.getElementById('hongbao-timestamp').value, 10);
@@ -960,7 +958,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
   
-        // First, decrypt the AES layer with the user's password
+        // Step 2: Decrypt AES layer with password
         const encryptedObject = JSON.parse(encryptedKeyField);
         const passwordDecryptedCipher = await decryptWithPassword(
           encryptedObject.encrypted,
@@ -968,11 +966,13 @@ document.addEventListener('DOMContentLoaded', () => {
           encryptedObject.iv
         );
   
-        if (!passwordDecryptedCipher.startsWith("0x03")) {
-          throw new Error("Decryption failed. Invalid Shutter ciphertext.");
+        console.log("Password Decrypted Cipher:", passwordDecryptedCipher);
+  
+        if (!passwordDecryptedCipher.startsWith("0x03") || passwordDecryptedCipher.length < 100) {
+          throw new Error("Decryption with password failed. Resulting data is invalid.");
         }
   
-        // Retrieve identity from URL to fetch final Shutter decryption key
+        // Step 3: Fetch Shutter decryption key
         const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
         const identityParam = urlParams.get("identity");
         if (!identityParam) {
@@ -982,19 +982,39 @@ document.addEventListener('DOMContentLoaded', () => {
   
         const finalKey = await getShutterDecryptionKey(identityParam);
   
-        // Locally decrypt the Shutter ciphertext with finalKey
+        // Step 4: Perform Shutter decryption
         const finalDecryptedKey = await shutterDecryptPrivateKey(passwordDecryptedCipher, finalKey);
+        console.log("Final Decrypted Private Key:", finalDecryptedKey);
   
-        // Store decrypted key in a separate field or variable, not overwriting the original
-        document.getElementById("decrypted-hongbao-key").value = finalDecryptedKey;
+        // Step 5: Store the decrypted key in a separate field
+        const decryptedKeyField = document.getElementById('decrypted-hongbao-key');
+        if (decryptedKeyField) {
+          decryptedKeyField.value = finalDecryptedKey; // Hidden field for decrypted key
+        } else {
+          // Fallback: Use an in-memory variable
+          window.decryptedHongbaoKey = finalDecryptedKey;
+        }
+  
+        // Step 6: Validate balance and inform the user
+        const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(finalDecryptedKey);
+        fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
+  
+        const amount = document.getElementById("redeem-hongbao").getAttribute("data-amount");
+        await checkHongbaoBalance(hongbaoAccount.address, amount);
   
         alert("Successfully decrypted the Hongbao!");
       } catch (error) {
-        console.error("Decryption error:", error);
-        alert("Failed to decrypt the Hongbao. Please ensure the password and key are correct.");
+        console.error("Error during decryption or balance check:", error);
+  
+        if (error.response && error.response.status === 403) {
+          alert("The Shutter decryption key is not yet available. Please try again after the unlock time.");
+        } else {
+          alert("Failed to decrypt or check balance. Ensure the password and key are correct.");
+        }
       }
     });
   }
+  
     
   
 
