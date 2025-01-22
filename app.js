@@ -833,6 +833,8 @@ function isWeChatBrowser() {
                      typeof window.TelegramWebviewProxy !== 'undefined' ||
                      typeof window.TelegramWebviewProxyProto !== 'undefined';
 
+  console.log(navigator.userAgent);
+
   return isWeChat || isTelegram;
 }
 
