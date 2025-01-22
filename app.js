@@ -826,8 +826,9 @@ async function checkHongbaoBalance(hongbaoAccountAddress, expectedAmount) {
 
 function isWeChatBrowser() {
   const ua = navigator.userAgent.toLowerCase();
-  return ua.includes("micromessenger");
+  return ua.includes("micromessenger") || ua.includes("telegram");
 }
+
 
 // Countdown timer
 function startCountdown(timestamp) {
