@@ -881,11 +881,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   const createOwnHongbaoButton = document.getElementById('create-own-hongbao');
+
   if (createOwnHongbaoButton) {
     createOwnHongbaoButton.addEventListener('click', () => {
-      document.getElementById('receiver-section').classList.add('hidden');
+      // Reset URL to the base without query/hash
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      // Reset the page sections
       document.getElementById('sender-section').classList.remove('hidden');
-      document.querySelector('.title').textContent = '🎁 Hongbao Gifting DApp';
+      document.getElementById('receiver-section').classList.add('hidden');
+      document.querySelector('.title').textContent = '🎁 Shutterized Hongbao Gifting DApp - 红包赠送应用';
+
+      // Clear any fields
+      document.getElementById('hongbao-amount').value = '';
+      document.getElementById('unlock-time').value = '60';
+      document.getElementById('custom-timestamp-container').classList.add('hidden');
+      document.getElementById('hongbao-password').value = '';
+      document.getElementById('hongbao-details').textContent = '';
+      document.getElementById('hongbao-details').classList.add('hidden');
+      document.getElementById('hongbao-link').textContent = '';
+      document.getElementById('hongbao-link').classList.add('hidden');
+      document.getElementById('hongbao-visual').classList.add('hidden');
     });
   }
 
