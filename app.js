@@ -350,8 +350,7 @@ async function fundHongbaoWithPasskey(amount) {
     console.error("Error funding Hongbao with Passkey Wallet:", error);
     alert("Failed to fund Hongbao with Passkey Wallet.");
   }
-}
-async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
+}async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
   try {
     await ensureGnosisChain();
 
@@ -365,17 +364,21 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
     const hongbaoVisual = document.getElementById("hongbao-visual-redeem");
     const resultElement = document.getElementById("redeem-result");
 
-    detailsElement.innerHTML = "Checking for password protection...<br>";
+    detailsElement.innerHTML = "Checking for decrypted key or password protection...<br>";
     detailsElement.classList.remove("hidden");
 
-    let decryptedKey = encryptedKey;
+    let decryptedKey;
 
-    // 1) If user manually typed a fully decrypted key
-    const keyField = document.getElementById("hongbao-key").value;
-    if (keyField.startsWith("0x") && keyField.length === 66) {
-      decryptedKey = keyField;
+    // Step 1: Check for a previously decrypted key
+    const decryptedKeyField = document.getElementById("decrypted-hongbao-key");
+    if (decryptedKeyField && decryptedKeyField.value) {
+      decryptedKey = decryptedKeyField.value;
+      console.log("Using previously decrypted key from field.");
+    } else if (window.decryptedHongbaoKey) {
+      decryptedKey = window.decryptedHongbaoKey;
+      console.log("Using previously decrypted key from memory.");
     } else {
-      // 2) If link says protected=true, do password-based AES decryption first
+      console.log("No previously decrypted key found. Proceeding to decrypt.");
       const isProtected = new URLSearchParams(window.location.search).get("protected") === "true";
       if (isProtected) {
         const password = document.getElementById("redeem-password").value.trim();
@@ -383,8 +386,9 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
           alert("Password is required to decrypt this Hongbao.");
           return;
         }
+
         try {
-          const encryptedObject = JSON.parse(decryptedKey);
+          const encryptedObject = JSON.parse(encryptedKey);
           decryptedKey = await decryptWithPassword(
             encryptedObject.encrypted,
             password,
@@ -394,13 +398,14 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
           alert("Invalid password. Unable to decrypt the Hongbao.");
           return;
         }
+      } else {
+        decryptedKey = encryptedKey; // Not password-protected
       }
 
-      // 3) Check if we still have BLST ciphertext (e.g., starts with "0x03").
-      //    If it's clearly a normal private key already (66 chars), skip local BLST.
+      // Step 2: Check if still encrypted with Shutter
       if (
-        decryptedKey.startsWith("0x03") && // BLST version byte
-        decryptedKey.length > 66           // Enough length to be ciphertext
+        decryptedKey.startsWith("0x03") && // BLST ciphertext
+        decryptedKey.length > 66
       ) {
         const urlParams = new URLSearchParams(window.location.hash.split("?")[1]);
         const identityParam = urlParams.get("identity");
@@ -411,20 +416,24 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
 
         const finalKey = await getShutterDecryptionKey(identityParam);
 
-        // Locally decrypt the BLST ciphertext with finalKey
+        // Perform Shutter decryption
         decryptedKey = await shutterDecryptPrivateKey(decryptedKey, finalKey);
+      }
 
-        detailsElement.innerHTML += `
-          Shutter Keypers generated the decryption key.<br>
-          Decryption key: <strong>${decryptedKey}</strong><br>
-          Decryption successful!<br>
-        `;
-
-        document.getElementById("hongbao-key").value = decryptedKey;
+      // Store the decrypted key for reuse
+      if (decryptedKeyField) {
+        decryptedKeyField.value = decryptedKey;
+      } else {
+        window.decryptedHongbaoKey = decryptedKey;
       }
     }
 
-    // 4) Use the fully decrypted key to sweep the funds
+    // Step 3: Validate the final key
+    if (!decryptedKey.startsWith("0x") || decryptedKey.length !== 66) {
+      throw new Error("Invalid private key after decryption.");
+    }
+
+    // Step 4: Use the fully decrypted key to sweep the funds
     const hongbaoAccount = fallbackWeb3.eth.accounts.privateKeyToAccount(decryptedKey);
     fallbackWeb3.eth.accounts.wallet.add(hongbaoAccount);
 
@@ -476,9 +485,6 @@ async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
     alert("Failed to redeem or sweep Hongbao.");
   }
 }
-
-
-
 
 
 async function claimToNewWallet(encryptedKey, timestamp, amount) {
