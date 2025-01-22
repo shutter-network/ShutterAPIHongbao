@@ -826,8 +826,16 @@ async function checkHongbaoBalance(hongbaoAccountAddress, expectedAmount) {
 
 function isWeChatBrowser() {
   const ua = navigator.userAgent.toLowerCase();
-  return ua.includes("micromessenger") || /telegram(\/|\.app)/i.test(ua);
+  const isWeChat = ua.includes("micromessenger");
+
+  // Detect Telegram's in-app browser
+  const isTelegram = typeof window.TelegramWebview !== 'undefined' ||
+                     typeof window.TelegramWebviewProxy !== 'undefined' ||
+                     typeof window.TelegramWebviewProxyProto !== 'undefined';
+
+  return isWeChat || isTelegram;
 }
+
 
 
 
