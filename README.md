@@ -11,7 +11,7 @@ The **Shutterized Hongbao DApp** is a decentralized application for secure crypt
 
 A **hongbao** is a traditional red envelope commonly used in Chinese culture to gift money during special occasions like Lunar New Year, symbolizing good luck and prosperity.
 
-**Important**: This is extremely early alpha software using NanoShutter, a simplified and centralized version of Shutter. Use at your own risk—assume potential loss of all connected funds.  
+**Important**: This is extremely early alpha software using a centralized version of Shutter. Use at your own risk—assume potential loss of all connected funds.  
 
 ---
 
@@ -164,8 +164,3 @@ The link contains critical information. Losing it means the Hongbao cannot be re
 - **CryptoJS & Web Crypto API**: Encryption and decryption utilities.  
 - **Shutter Network**: Encryption and decryption services.  
 
----
-
-## Conclusion  
-
-The Shutterized Hongbao DApp combines secure time-locked gifting with decentralized privacy. With added features like password protection and a non-custodial passkey wallet, it ensures maximum flexibility, security, and accessibility for users.  
