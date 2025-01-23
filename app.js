@@ -95,10 +95,13 @@ async function encryptWithPassword(data, password) {
     false,
     ["deriveKey"]
   );
+  const saltSeed = new Uint8Array(16);
+  crypto.getRandomValues(saltSeed);
+  const salt = "shutter_hongbao_" + btoa(String.fromCharCode(...saltSeed));
   const derivedKey = await crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
-      salt: encoder.encode("shutter_hongbao_salt"),
+      salt: encoder.encode(salt),
       iterations: 100000,
       hash: "SHA-256",
     },
@@ -108,7 +111,8 @@ async function encryptWithPassword(data, password) {
     ["encrypt"]
   );
 
-  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const iv = new Uint8Array(12);
+  crypto.getRandomValues(iv);
   const encrypted = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     derivedKey,
@@ -118,11 +122,12 @@ async function encryptWithPassword(data, password) {
   return {
     encrypted: btoa(String.fromCharCode(...new Uint8Array(encrypted))),
     iv: btoa(String.fromCharCode(...iv)),
+    salt: salt,
   };
 }
 
 // AES Decryption using Web Crypto API
-async function decryptWithPassword(encryptedData, password, iv) {
+async function decryptWithPassword(encryptedData, password, iv, salt) {
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -135,7 +140,7 @@ async function decryptWithPassword(encryptedData, password, iv) {
   const derivedKey = await crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
-      salt: encoder.encode("shutter_hongbao_salt"),
+      salt: encoder.encode(salt),
       iterations: 100000,
       hash: "SHA-256",
     },
@@ -392,7 +397,8 @@ async function fundHongbaoWithPasskey(amount) {
           decryptedKey = await decryptWithPassword(
             encryptedObject.encrypted,
             password,
-            encryptedObject.iv
+            encryptedObject.iv,
+            encryptedObject.salt,
           );
         } catch (error) {
           alert("Invalid password. Unable to decrypt the Hongbao.");
@@ -553,7 +559,8 @@ async function redeemHongbaoWithWallet(encryptedKey, timestamp, amount, wallet) 
           decryptedPrivateKey = await decryptWithPassword(
             encryptedObject.encrypted,
             password,
-            encryptedObject.iv
+            encryptedObject.iv,
+            encryptedObject.salt,
           );
         } catch (error) {
           alert("Invalid password. Unable to decrypt the Hongbao.");
@@ -739,7 +746,8 @@ async function populateFieldsFromHash() {
         possiblyShutterCipher = await decryptWithPassword(
           encryptedObject.encrypted,
           userPassword,
-          encryptedObject.iv
+          encryptedObject.iv,
+          encryptedObject.salt,
         );
         console.log("Post-password data (possibly Shutter ciphertext):", possiblyShutterCipher);
       } catch (aesErr) {
@@ -1009,7 +1017,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const passwordDecryptedCipher = await decryptWithPassword(
           encryptedObject.encrypted,
           password,
-          encryptedObject.iv
+          encryptedObject.iv,
+          encryptedObject.salt,
         );
   
         if (!passwordDecryptedCipher.startsWith("0x03") || passwordDecryptedCipher.length < 100) {
