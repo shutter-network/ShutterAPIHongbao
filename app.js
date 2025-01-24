@@ -68,7 +68,7 @@ async function connectMetaMask() {
 
 // Copy to clipboard functionality
 function copyToClipboard(text) {
-  const tempInput = document.createElement('input');
+  const tempInput = document.createElement('textarea');
   tempInput.style.position = 'absolute';
   tempInput.style.left = '-9999px';
   tempInput.value = text;
@@ -76,13 +76,27 @@ function copyToClipboard(text) {
   tempInput.select();
   document.execCommand('copy');
   document.body.removeChild(tempInput);
-  alert('Link copied to clipboard!');
+  alert('Message copied to clipboard!');
 }
 
 document.getElementById('hongbao-link').addEventListener('click', (event) => {
-  const link = event.target.textContent.replace('Share this link: ', '');
-  copyToClipboard(link);
+  const linkElement = event.target.closest('#hongbao-link');
+  if (linkElement) {
+    const link = linkElement.querySelector('a')?.href;
+    if (link) {
+      const message = `
+        Someone gifted you a Hongbao with some xDAI on Gnosis Chain! 
+        This Hongbao is locked until a specific time and was encrypted with Shutter, unlocking exactly on time!
+        
+        Open this link in a real browser (not e.g., embedded webkit): ${link}
+      `;
+      copyToClipboard(message.trim());
+    } else {
+      alert('No link found to copy.');
+    }
+  }
 });
+
 
 
 // AES Encryption using Web Crypto API
