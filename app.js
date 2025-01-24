@@ -235,7 +235,12 @@ async function sendHongbao(amount) {
       Shutter Keypers provided the encryption key for the Hongbao.<br>
       Funds are locked until: <strong>${new Date(releaseTimestamp * 1000).toLocaleString()}</strong>
     `;
-    linkElement.textContent = `Share this link: ${link}`;
+    linkElement.innerHTML = `
+    <strong>Share this message:</strong><br>
+    Someone gifted you a Hongbao with some xDAI on Gnosis Chain! This Hongbao is locked until ${new Date(releaseTimestamp * 1000).toLocaleString()} (or some other time that the sender has chosen)! It was encrypted with Shutter, and will unlock exactly on time thanks to encryption and decryption magic!<br><br>
+    Open this link in a real browser (not e.g., embedded webkit): <a href="${link}" target="_blank">${link}</a>
+  `;
+  
     linkElement.classList.remove("hidden");
 
     // 6) Fund the ephemeral address
@@ -312,7 +317,12 @@ async function fundHongbaoWithPasskey(amount) {
       Shutter Keypers provided the encryption key for the Hongbao.<br>
       Funds are locked until: <strong>${new Date(releaseTimestamp * 1000).toLocaleString()}</strong>
     `;
-    linkElement.textContent = `Share this link: ${link}`;
+    linkElement.innerHTML = `
+  <strong>Share this message:</strong><br>
+  Someone gifted you a Hongbao with some xDAI on Gnosis Chain! This Hongbao is locked until ${new Date(releaseTimestamp * 1000).toLocaleString()} (or some other time that the sender has chosen)! It was encrypted with Shutter, and will unlock exactly on time thanks to encryption and decryption magic!<br><br>
+  Open this link in a real browser (not e.g., embedded webkit): <a href="${link}" target="_blank">${link}</a>
+`;
+
     linkElement.classList.remove("hidden");
 
     // 5) Estimate gas and send transaction
@@ -355,6 +365,7 @@ async function fundHongbaoWithPasskey(amount) {
     console.error("Error funding Hongbao with Passkey Wallet:", error);
     alert("Failed to fund Hongbao with Passkey Wallet.");
   }
+
 }async function redeemHongbaoAndSweep(encryptedKey, timestamp, amount) {
   try {
     await ensureGnosisChain();
