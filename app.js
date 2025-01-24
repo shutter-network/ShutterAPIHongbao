@@ -85,10 +85,8 @@ document.getElementById('hongbao-link').addEventListener('click', (event) => {
     const link = linkElement.querySelector('a')?.href;
     if (link) {
       const message = `
-Someone gifted you a Hongbao with some xDAI on Gnosis Chain!
-This Hongbao is locked until a specific time and was encrypted with Shutter, unlocking exactly on time.
+Here's a threshold encrypted Hongbao with some xDAI on Gnosis Chain! Open this link in a real browser:
 
-Open this link in a real browser (not e.g., embedded webkit):
 ${link}
       `;
       copyToClipboard(message.trim());
