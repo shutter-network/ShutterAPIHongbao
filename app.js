@@ -85,10 +85,11 @@ document.getElementById('hongbao-link').addEventListener('click', (event) => {
     const link = linkElement.querySelector('a')?.href;
     if (link) {
       const message = `
-        Someone gifted you a Hongbao with some xDAI on Gnosis Chain! 
-        This Hongbao is locked until a specific time and was encrypted with Shutter, unlocking exactly on time!
-        
-        Open this link in a real browser (not e.g., embedded webkit): ${link}
+Someone gifted you a Hongbao with some xDAI on Gnosis Chain!
+This Hongbao is locked until a specific time and was encrypted with Shutter, unlocking exactly on time.
+
+Open this link in a real browser (not e.g., embedded webkit):
+${link}
       `;
       copyToClipboard(message.trim());
     } else {
@@ -96,6 +97,7 @@ document.getElementById('hongbao-link').addEventListener('click', (event) => {
     }
   }
 });
+
 
 
 
@@ -250,8 +252,8 @@ async function sendHongbao(amount) {
       Funds are locked until: <strong>${new Date(releaseTimestamp * 1000).toLocaleString()}</strong>
     `;
     linkElement.innerHTML = `
-    <strong>Share this message:</strong><br>
-    Someone gifted you a Hongbao with some xDAI on Gnosis Chain! This Hongbao is locked until ${new Date(releaseTimestamp * 1000).toLocaleString()} (or some other time that the sender has chosen)! It was encrypted with Shutter, and will unlock exactly on time thanks to encryption and decryption magic!<br><br>
+    <strong>Share this message (click/touch to copy to clipboard):</strong><br>
+    Someone gifted you a Hongbao with some xDAI on Gnosis Chain! This Hongbao is locked until ${new Date(releaseTimestamp * 1000).toLocaleString()}! It was encrypted with Shutter, and will unlock exactly on time thanks to encryption and decryption magic!<br><br>
     Open this link in a real browser (not e.g., embedded webkit): <a href="${link}" target="_blank">${link}</a>
   `;
   
@@ -332,8 +334,8 @@ async function fundHongbaoWithPasskey(amount) {
       Funds are locked until: <strong>${new Date(releaseTimestamp * 1000).toLocaleString()}</strong>
     `;
     linkElement.innerHTML = `
-  <strong>Share this message:</strong><br>
-  Someone gifted you a Hongbao with some xDAI on Gnosis Chain! This Hongbao is locked until ${new Date(releaseTimestamp * 1000).toLocaleString()} (or some other time that the sender has chosen)! It was encrypted with Shutter, and will unlock exactly on time thanks to encryption and decryption magic!<br><br>
+  <strong>Share this message (click/touch to copy to clipboard):</strong><br>
+  Someone gifted you a Hongbao with some xDAI on Gnosis Chain! This Hongbao is locked until ${new Date(releaseTimestamp * 1000).toLocaleString()}! It was encrypted with Shutter, and will unlock exactly on time thanks to encryption and decryption magic!<br><br>
   Open this link in a real browser (not e.g., embedded webkit): <a href="${link}" target="_blank">${link}</a>
 `;
 
