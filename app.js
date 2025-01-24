@@ -239,7 +239,7 @@ async function sendHongbao(amount) {
     }
 
     // 5) Construct the link
-    const link = `${window.location.origin}/ShutterAPIHongbao/#redeem?key=${encodeURIComponent(
+    const link = `${window.location.origin}/#redeem?key=${encodeURIComponent(
       shutterEncryptedKey
     )}&timestamp=${releaseTimestamp}&amount=${amount}&protected=${!!password}&identity=${finalIdentity}`;
 
@@ -321,7 +321,7 @@ async function fundHongbaoWithPasskey(amount) {
       shutterEncryptedKey = JSON.stringify(passwordEncrypted);
     }
 
-    const link = `${window.location.origin}/ShutterAPIHongbao/#redeem?key=${encodeURIComponent(
+    const link = `${window.location.origin}/#redeem?key=${encodeURIComponent(
       shutterEncryptedKey
     )}&timestamp=${releaseTimestamp}&amount=${amount}&protected=${!!password}&identity=${finalIdentity}`;
 
