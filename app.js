@@ -1108,7 +1108,7 @@ document.getElementById("unlock-time").addEventListener("change", (event) => {
  *   - Locally decrypt your private key (BLST-based)
  *
  * They call the new Shutter mainnet endpoint:
- *   https://shutter.api.staging.shutter.network/api
+ *   https://shutter-api.shutter.network/api
  *********************************************************************/
 
 /**
@@ -1123,7 +1123,7 @@ async function registerShutterIdentity(decryptionTimestamp, identityPrefixHex) {
   try {
     // Provide the registry param in the request body
     const response = await axios.post(
-      'https://shutter.api.staging.shutter.network/api/register_identity',
+      'https://shutter-api.shutter.network/api/register_identity',
       {
         decryptionTimestamp,
         identityPrefix: identityPrefixHex,
@@ -1149,7 +1149,7 @@ async function getShutterEncryptionData(userAddress, identityPrefixHex) {
   try {
     // Force usage of the mainnet registry address
     const url =
-      `https://shutter.api.staging.shutter.network/api/get_data_for_encryption?` +
+      `https://shutter-api.shutter.network/api/get_data_for_encryption?` +
       `address=0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc&identityPrefix=${identityPrefixHex}`;
 
     const response = await axios.get(url);
@@ -1219,7 +1219,7 @@ async function getShutterDecryptionKey(identityHex) {
   try {
     // Also specify the registry param in the query string
     const url =
-      `https://shutter.api.staging.shutter.network/api/get_decryption_key?` +
+      `https://shutter-api.shutter.network/api/get_decryption_key?` +
       `identity=${identityHex}&registry=0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc`;
     const response = await axios.get(url);
     console.log('Shutter Decryption Key:', response.data.message.decryption_key);
