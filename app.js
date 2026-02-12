@@ -1127,6 +1127,11 @@ async function registerShutterIdentity(decryptionTimestamp, identityPrefixHex) {
       {
         decryptionTimestamp,
         identityPrefix: identityPrefixHex
+      },
+      {
+        headers: {
+          'Authorization': 'Bearer 8fb2152da1afaa888d8709fed3d472274dfa56879af43b32314626ddcb021e1f'
+        }
       }
     );
     console.log('Shutter Identity Registration:', response.data);
@@ -1151,7 +1156,11 @@ async function getShutterEncryptionData(userAddress, identityPrefixHex) {
       `https://shutter-api.shutter.network/api/time/get_data_for_encryption?` +
       `address=0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc&identityPrefix=${identityPrefixHex}`;
 
-    const response = await axios.get(url);
+    const response = await axios.get(url, {
+      headers: {
+        'Authorization': 'Bearer 8fb2152da1afaa888d8709fed3d472274dfa56879af43b32314626ddcb021e1f'
+      }
+    });
     console.log('Encryption Data:', response.data);
     return response.data;
   } catch (error) {
@@ -1220,7 +1229,11 @@ async function getShutterDecryptionKey(identityHex) {
     const url =
       `https://shutter-api.shutter.network/api/time/get_decryption_key?` +
       `identity=${identityHex}`;
-    const response = await axios.get(url);
+    const response = await axios.get(url, {
+      headers: {
+        'Authorization': 'Bearer 8fb2152da1afaa888d8709fed3d472274dfa56879af43b32314626ddcb021e1f'
+      }
+    });
     console.log('Shutter Decryption Key:', response.data.message.decryption_key);
     return response.data.message.decryption_key;
   } catch (error) {
