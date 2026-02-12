@@ -1121,13 +1121,12 @@ document.getElementById("unlock-time").addEventListener("change", (event) => {
  */
 async function registerShutterIdentity(decryptionTimestamp, identityPrefixHex) {
   try {
-    // Provide the registry param in the request body
+    // Use the new time-based endpoint (registry parameter no longer needed)
     const response = await axios.post(
-      'https://shutter-api.shutter.network/api/register_identity',
+      'https://shutter-api.shutter.network/api/time/register_identity',
       {
         decryptionTimestamp,
-        identityPrefix: identityPrefixHex,
-        registry: "0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc"
+        identityPrefix: identityPrefixHex
       }
     );
     console.log('Shutter Identity Registration:', response.data);
@@ -1147,9 +1146,9 @@ async function registerShutterIdentity(decryptionTimestamp, identityPrefixHex) {
  */
 async function getShutterEncryptionData(userAddress, identityPrefixHex) {
   try {
-    // Force usage of the mainnet registry address
+    // Use the new time-based endpoint with mainnet registry address
     const url =
-      `https://shutter-api.shutter.network/api/get_data_for_encryption?` +
+      `https://shutter-api.shutter.network/api/time/get_data_for_encryption?` +
       `address=0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc&identityPrefix=${identityPrefixHex}`;
 
     const response = await axios.get(url);
@@ -1217,10 +1216,10 @@ async function shutterEncryptPrivateKey(privateKeyHex, encryptionData, sigmaHex)
  */
 async function getShutterDecryptionKey(identityHex) {
   try {
-    // Also specify the registry param in the query string
+    // Use the new time-based endpoint (registry parameter no longer needed)
     const url =
-      `https://shutter-api.shutter.network/api/get_decryption_key?` +
-      `identity=${identityHex}&registry=0x228DefCF37Da29475F0EE2B9E4dfAeDc3b0746bc`;
+      `https://shutter-api.shutter.network/api/time/get_decryption_key?` +
+      `identity=${identityHex}`;
     const response = await axios.get(url);
     console.log('Shutter Decryption Key:', response.data.message.decryption_key);
     return response.data.message.decryption_key;
